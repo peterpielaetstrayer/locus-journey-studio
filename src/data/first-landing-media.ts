@@ -30,7 +30,7 @@ export const FIRST_LANDING_MEDIA = {
   entrance: {
     id: "entrance",
     src: "/images/first-landing/entrance.svg",
-    productionSrc: "/images/first-landing/entrance.webp",
+    productionSrc: "/images/first-landing/entrance.png",
     alt: "First Landing State Park wetland at dawn — still water, cypress trunks, mist over the boardwalk edge",
     focal: { x: 48, y: 42 },
     fallbackGradient:
