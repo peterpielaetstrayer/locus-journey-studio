@@ -1,0 +1,440 @@
+import type {
+  AdaptiveBranch,
+  Journey,
+  JourneyStop,
+  LearnerProfile,
+  ReviewStatus,
+  SystemsMap,
+  User,
+} from "@/types";
+
+export const USERS: User[] = [
+  {
+    id: "user-steph",
+    name: "Steph Rivera",
+    roles: ["creator", "orchestrator"],
+  },
+];
+
+export const REVIEW_STATUS: ReviewStatus = {
+  learningDesign: "in-review",
+  factual: "in-review",
+  safety: "in-review",
+  accessibility: "in-review",
+  fieldTest: "not-started",
+  unresolvedIssues: 4,
+  maintenanceDate: "2026-07-28",
+  publicationState: "field-test-draft",
+};
+
+export const WATER_WRITES_JOURNEY: Journey = {
+  id: "journey-water-writes",
+  title: "Water Writes the Landscape",
+  subtitle: "Virginia Beach Living Systems Journey",
+  description:
+    "Investigate how water shapes soil, plants, habitat, decomposition, human movement, and the visible character of a place at First Landing State Park.",
+  region: "Virginia Beach",
+  location: "First Landing State Park",
+  centralQuestion:
+    "How can you tell that water is shaping a place—even when you cannot see it moving?",
+  audience: "Ages 12–15 (adaptable for families, cohorts, adults)",
+  durationMinutes: 90,
+  creatorIds: ["user-steph"],
+  learningDomains: [
+    "Ecology",
+    "Hydrology",
+    "Systems thinking",
+    "Scientific reasoning",
+  ],
+  enduringUnderstandings: [
+    "Water shapes landscapes through visible and invisible processes.",
+    "Water availability influences soil, plant distribution, decomposition, habitat, and human design.",
+    "Scientific explanations improve through comparison and evidence.",
+    "Landscapes operate as connected systems.",
+  ],
+  prerequisiteConcepts: ["Observation", "Cause and effect", "Evidence"],
+  status: "field-test",
+  stopIds: [
+    "stop-threshold",
+    "stop-water-fingerprints",
+    "stop-cypress-knee",
+    "stop-two-worlds",
+    "stop-hidden-flow",
+    "stop-human-path",
+    "stop-build-system",
+    "stop-exit-claim",
+  ],
+  artifactTemplateId: "artifact-systems-card",
+  reviewStatus: REVIEW_STATUS,
+};
+
+export const JOURNEY_STOPS: JourneyStop[] = [
+  {
+    id: "stop-threshold",
+    journeyId: "journey-water-writes",
+    order: 1,
+    title: "The Threshold",
+    locationLabel: "Trail entrance, maritime forest edge",
+    purpose: "Attend and notice before naming or explaining.",
+    centralConcept: "Observation",
+    learningObjective: "Capture sensory observations without premature explanation.",
+    openingPrompt:
+      "For the next three minutes, walk without trying to name or explain anything.",
+    fieldAction:
+      "Capture three observations, one sound, one pattern, and one surprising detail.",
+    evidenceRequirementIds: [],
+    branchIds: [],
+    mentorInterventionIds: [],
+    safetyNotes: ["Stay on designated trail", "Two screened adults present"],
+    accessibilityAlternatives: ["Seated observation from boardwalk edge"],
+    optional: false,
+    hiddenUntilUnlocked: false,
+    mapX: 12,
+    mapY: 78,
+  },
+  {
+    id: "stop-water-fingerprints",
+    journeyId: "journey-water-writes",
+    order: 2,
+    title: "Water Fingerprints",
+    locationLabel: "Boardwalk overlook, bald-cypress wetland",
+    purpose: "Gather evidence that water shaped this place.",
+    centralConcept: "Evidence of hydrological influence",
+    learningObjective: "Record observations, interpretations, and alternative explanations.",
+    openingPrompt: "Find three clues that water shaped this place.",
+    fieldAction:
+      "For each clue record the observation, location, interpretation, alternative explanation, and confidence.",
+    evidenceRequirementIds: ["ev-fingerprint-3"],
+    branchIds: [],
+    mentorInterventionIds: [],
+    safetyNotes: ["No water entry", "No off-trail movement"],
+    accessibilityAlternatives: ["Observe from boardwalk railing"],
+    artifactContribution: "Strongest evidence selection",
+    optional: false,
+    hiddenUntilUnlocked: true,
+    mapX: 28,
+    mapY: 62,
+  },
+  {
+    id: "stop-cypress-knee",
+    journeyId: "journey-water-writes",
+    order: 3,
+    title: "Cypress-Knee Mystery",
+    locationLabel: "Cypress grove, standing water edge",
+    purpose: "Hypothesize about unfamiliar structures.",
+    centralConcept: "Adaptation and function",
+    learningObjective: "Form and test hypotheses about cypress knees.",
+    openingPrompt: "What do you think these structures do?",
+    fieldAction:
+      "What evidence would make your explanation more convincing?",
+    evidenceRequirementIds: ["ev-hypothesis"],
+    branchIds: [
+      "branch-advanced",
+      "branch-structured",
+      "branch-reluctant",
+      "branch-artistic",
+    ],
+    mentorInterventionIds: [],
+    safetyNotes: ["Do not climb on knees", "Do not handle wildlife"],
+    accessibilityAlternatives: ["Compare photos of two knee examples"],
+    resurfacingConnection: "Wetland structures reappear at shoreline",
+    optional: false,
+    hiddenUntilUnlocked: true,
+    mapX: 44,
+    mapY: 48,
+  },
+  {
+    id: "stop-two-worlds",
+    journeyId: "journey-water-writes",
+    order: 4,
+    title: "Twenty Steps, Two Worlds",
+    locationLabel: "Transition zone, wet to dry",
+    purpose: "Compare microenvironments.",
+    centralConcept: "Microenvironment comparison",
+    learningObjective: "Compare wetter and drier zones across multiple variables.",
+    openingPrompt: "What changed? What stayed the same? What might explain the difference?",
+    fieldAction:
+      "Compare soil, roots, plant distribution, leaf litter, decomposition, light, and trail surface.",
+    evidenceRequirementIds: ["ev-comparison"],
+    branchIds: [],
+    mentorInterventionIds: [],
+    safetyNotes: ["Stay on trail surface"],
+    accessibilityAlternatives: ["Compare two labeled photo stations"],
+    optional: false,
+    hiddenUntilUnlocked: true,
+    mapX: 58,
+    mapY: 38,
+  },
+  {
+    id: "stop-hidden-flow",
+    journeyId: "journey-water-writes",
+    order: 5,
+    title: "The Hidden Flow",
+    locationLabel: "Still water observation point",
+    purpose: "Reason about invisible processes.",
+    centralConcept: "Invisible hydrological activity",
+    learningObjective: "Identify processes that continue despite apparent stillness.",
+    openingPrompt: "The water appears still. What might still be happening?",
+    fieldAction:
+      "What became visible after you stopped trying to move forward?",
+    evidenceRequirementIds: [],
+    branchIds: [],
+    mentorInterventionIds: [],
+    safetyNotes: ["Quiet-attention option available"],
+    accessibilityAlternatives: ["Extended stillness from seated position"],
+    optional: true,
+    hiddenUntilUnlocked: true,
+    mapX: 68,
+    mapY: 28,
+  },
+  {
+    id: "stop-human-path",
+    journeyId: "journey-water-writes",
+    order: 6,
+    title: "The Human Path",
+    locationLabel: "Elevated boardwalk section",
+    purpose: "Connect ecology and human design.",
+    centralConcept: "Human infrastructure and environment",
+    learningObjective: "Explain why the trail is built this way.",
+    openingPrompt: "Why is the trail built this way?",
+    fieldAction:
+      "Improve one part of the visitor experience without damaging the ecosystem.",
+    evidenceRequirementIds: [],
+    branchIds: [],
+    mentorInterventionIds: [],
+    safetyNotes: ["Design challenge is observational only"],
+    accessibilityAlternatives: ["Discuss design from accessible overlook"],
+    optional: false,
+    hiddenUntilUnlocked: true,
+    mapX: 76,
+    mapY: 22,
+  },
+  {
+    id: "stop-build-system",
+    journeyId: "journey-water-writes",
+    order: 7,
+    title: "Build the System",
+    locationLabel: "Trail junction, systems map station",
+    purpose: "Model causality across the landscape.",
+    centralConcept: "Systems mapping",
+    learningObjective: "Connect five nodes with four causal links and one uncertainty.",
+    openingPrompt: "How do rainfall, water level, soil, plants, and trail design connect?",
+    fieldAction:
+      "Build a systems map with five nodes, four connections, one uncertainty, and one prediction.",
+    evidenceRequirementIds: ["ev-systems-map"],
+    branchIds: [],
+    mentorInterventionIds: [],
+    safetyNotes: [],
+    accessibilityAlternatives: ["Text-based node list alternative to drag map"],
+    artifactContribution: "Systems diagram",
+    optional: false,
+    hiddenUntilUnlocked: true,
+    mapX: 84,
+    mapY: 18,
+  },
+  {
+    id: "stop-exit-claim",
+    journeyId: "journey-water-writes",
+    order: 8,
+    title: "Exit Claim",
+    locationLabel: "Trail exit, reflection point",
+    purpose: "Explain and revise understanding.",
+    centralConcept: "Scientific explanation",
+    learningObjective: "Make a claim supported by evidence and acknowledge remaining questions.",
+    openingPrompt: "Water organizes this landscape by…",
+    fieldAction:
+      "Provide a claim, two observations, a causal connection, and one remaining question.",
+    evidenceRequirementIds: ["ev-exit-claim"],
+    branchIds: [],
+    mentorInterventionIds: [],
+    safetyNotes: [],
+    accessibilityAlternatives: ["Voice capture for exit claim"],
+    artifactContribution: "Revised explanation",
+    optional: false,
+    hiddenUntilUnlocked: true,
+    mapX: 92,
+    mapY: 12,
+  },
+];
+
+export const ADAPTIVE_BRANCHES: AdaptiveBranch[] = [
+  {
+    id: "branch-advanced",
+    stopId: "stop-cypress-knee",
+    name: "Curious Explorer",
+    learnerType: "advanced",
+    activationType: "ai-recommended",
+    triggerDescription: "Learner with strong evidence and causal reasoning",
+    prompt: "Design a field study",
+    action:
+      "Design a field test that could distinguish between two competing explanations for cypress knees.",
+    evidenceExpectation: "Study design with measurable comparison",
+    returnToCore: true,
+  },
+  {
+    id: "branch-structured",
+    stopId: "stop-cypress-knee",
+    name: "Needs Structure",
+    learnerType: "structured",
+    activationType: "ai-recommended",
+    triggerDescription: "Learner who benefits from stepwise support",
+    prompt: "Compare two examples",
+    action:
+      "Step 1: Choose two knee examples. Step 2: Name one similarity. Step 3: Name one difference.",
+    evidenceExpectation: "Structured comparison with labeled steps",
+    returnToCore: true,
+  },
+  {
+    id: "branch-reluctant",
+    stopId: "stop-cypress-knee",
+    name: "Reluctant Learner",
+    learnerType: "reluctant",
+    activationType: "mentor-choice",
+    triggerDescription: "Learner showing disengagement",
+    prompt: "Find the strangest example",
+    action:
+      "Find the strangest cypress knee within ten safe steps. Capture it and explain why it matters.",
+    evidenceExpectation: "One compelling observation with personal relevance",
+    returnToCore: true,
+  },
+  {
+    id: "branch-artistic",
+    stopId: "stop-cypress-knee",
+    name: "Artistic Path",
+    learnerType: "artistic",
+    activationType: "learner-choice",
+    triggerDescription: "Learner prefers visual capture before explanation",
+    prompt: "Sketch before explaining",
+    action:
+      "Sketch one cypress knee and its surroundings before writing any explanation.",
+    evidenceExpectation: "Sketch plus delayed written hypothesis",
+    returnToCore: true,
+  },
+];
+
+export const LEARNERS: LearnerProfile[] = [
+  {
+    id: "learner-maya",
+    userId: "learner-maya",
+    name: "Maya Chen",
+    age: 14,
+    interests: ["wildlife photography", "wetland ecology", "drawing"],
+    strengths: ["visual observation", "quick hypothesis formation"],
+    growthAreas: ["evidence selection", "causal reasoning"],
+    preferredCaptureModes: ["photo", "text"],
+    accessibilityPreferences: [],
+    identityPathways: ["Emerging Naturalist"],
+    currentMastery: { observation: 0.7, evidence: 0.5, systems: 0.4 },
+    adaptationProfile: "curious",
+  },
+  {
+    id: "learner-eli",
+    userId: "learner-eli",
+    name: "Eli Brooks",
+    age: 13,
+    interests: ["trails", "movement", "discovery games"],
+    strengths: ["field energy", "finding unusual details"],
+    growthAreas: ["sustained focus", "written reflection"],
+    preferredCaptureModes: ["voice", "photo"],
+    accessibilityPreferences: ["movement breaks"],
+    identityPathways: ["Explorer"],
+    currentMastery: { observation: 0.6, evidence: 0.4, systems: 0.3 },
+    adaptationProfile: "movement",
+  },
+  {
+    id: "learner-jordan",
+    userId: "learner-jordan",
+    name: "Jordan Reyes",
+    age: 15,
+    interests: ["systems diagrams", "environmental science", "writing"],
+    strengths: ["careful analysis", "structured thinking"],
+    growthAreas: ["speed of hypothesis", "field confidence"],
+    preferredCaptureModes: ["text", "sketch"],
+    accessibilityPreferences: ["explicit step labels"],
+    identityPathways: ["Systems Thinker"],
+    currentMastery: { observation: 0.65, evidence: 0.7, systems: 0.6 },
+    adaptationProfile: "structured",
+  },
+];
+
+export const FUTURE_JOURNEYS = [
+  {
+    id: "journey-roots",
+    title: "Roots in Unstable Ground",
+    location: "First Landing State Park",
+    status: "concept" as const,
+  },
+  {
+    id: "journey-trail",
+    title: "A Trail Is a Decision",
+    location: "False Cape State Park",
+    status: "concept" as const,
+  },
+  {
+    id: "journey-tahoe",
+    title: "Tahoe Basin Explorer",
+    location: "Lake Tahoe, CA/NV",
+    status: "concept" as const,
+  },
+  {
+    id: "journey-sd",
+    title: "San Diego Coastal Systems",
+    location: "San Diego, CA",
+    status: "concept" as const,
+  },
+];
+
+export const DEFAULT_SYSTEMS_MAP: SystemsMap = {
+  nodes: [
+    { id: "n-rainfall", label: "Rainfall", x: 20, y: 15 },
+    { id: "n-water-level", label: "Water level", x: 50, y: 15 },
+    { id: "n-soil", label: "Soil saturation", x: 80, y: 15 },
+    { id: "n-roots", label: "Roots", x: 20, y: 55 },
+    { id: "n-plants", label: "Plant distribution", x: 50, y: 55 },
+    { id: "n-decomp", label: "Decomposition", x: 80, y: 55 },
+    { id: "n-habitat", label: "Habitat", x: 35, y: 85 },
+    { id: "n-trail", label: "Trail design", x: 65, y: 85 },
+  ],
+  edges: [],
+};
+
+export const REVIEWER_CHECKLIST = {
+  learningDesign: {
+    level: "in-review" as const,
+    notes: "Observation-before-explanation sequence validated. Retrieval and revision loops present.",
+  },
+  factual: {
+    level: "in-review" as const,
+    notes: "Cypress knee function described as hypothesis, not settled fact. Sources needed for hydrology claims.",
+  },
+  safety: {
+    level: "in-review" as const,
+    notes: "No water entry, no off-trail, no wildlife handling. Emergency procedures documented but not field-tested.",
+  },
+  accessibility: {
+    level: "in-review" as const,
+    notes: "Boardwalk alternatives present. Map list alternative required. Voice capture for exit claim.",
+  },
+  fieldTest: {
+    level: "not-started" as const,
+    notes: "Adult co-design walk not yet completed.",
+  },
+  unresolvedIssues: [
+    "Cypress knee explanation needs expert review before learner-facing certainty",
+    "Printed backup prompts not yet produced",
+    "Route accessibility audit incomplete for wheelchair users",
+    "Consent and emergency procedures require legal review",
+  ],
+};
+
+export function getStopById(id: string): JourneyStop | undefined {
+  return JOURNEY_STOPS.find((s) => s.id === id);
+}
+
+export function getLearnerById(id: string): LearnerProfile | undefined {
+  return LEARNERS.find((l) => l.id === id);
+}
+
+export function getBranchesForStop(stopId: string): AdaptiveBranch[] {
+  return ADAPTIVE_BRANCHES.filter((b) => b.stopId === stopId);
+}
