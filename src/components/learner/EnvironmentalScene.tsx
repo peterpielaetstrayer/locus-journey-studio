@@ -10,20 +10,28 @@ import {
 import { LocationStamp } from "./LocationStamp";
 
 type ContentAlign = "bottom" | "center" | "bottom-left";
+type OverlayVariant = "default" | "editorial";
 
 type EnvironmentalSceneProps = {
   media: EnvironmentalMedia;
   children?: React.ReactNode;
   className?: string;
   contentAlign?: ContentAlign;
+  contentClassName?: string;
   showLegibility?: boolean;
+  overlayVariant?: OverlayVariant;
+  showSideVignette?: boolean;
+  showAtmosphericWash?: boolean;
   showLocation?: boolean;
   parallax?: boolean;
+  /** Try productionSrc first, fall back to src on error */
+  preferProduction?: boolean;
   /** Optional ambient sound — off by default per accessibility */
   ambientSoundSrc?: string;
   ambientSoundLabel?: string;
   fullViewport?: boolean;
   priority?: boolean;
+  decorativeOverlay?: React.ReactNode;
 };
 
 export function EnvironmentalScene({
@@ -31,17 +39,30 @@ export function EnvironmentalScene({
   children,
   className,
   contentAlign = "bottom",
+  contentClassName,
   showLegibility = true,
+  overlayVariant = "default",
+  showSideVignette = false,
+  showAtmosphericWash = false,
   showLocation = true,
   parallax = false,
+  preferProduction = false,
   ambientSoundSrc,
   ambientSoundLabel = "Ambient wetland sound",
   fullViewport = false,
   priority = false,
+  decorativeOverlay,
 }: EnvironmentalSceneProps) {
+  const initialSrc = preferProduction ? media.productionSrc : media.src;
+  const [imageSrc, setImageSrc] = useState(initialSrc);
   const [imageError, setImageError] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    setImageSrc(preferProduction ? media.productionSrc : media.src);
+    setImageError(false);
+  }, [media.productionSrc, media.src, preferProduction]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -51,10 +72,18 @@ export function EnvironmentalScene({
     return () => mq.removeEventListener("change", handler);
   }, []);
 
+  function handleImageError() {
+    if (imageSrc === media.productionSrc && media.src !== media.productionSrc) {
+      setImageSrc(media.src);
+      return;
+    }
+    setImageError(true);
+  }
+
   const alignClass = {
     bottom: "items-end justify-center pb-16 md:pb-20",
     center: "items-center justify-center",
-    "bottom-left": "items-end justify-start pb-16 md:pb-20 pl-6 md:pl-10",
+    "bottom-left": "items-end justify-start pb-16 md:pb-20 pl-4 md:pl-6",
   }[contentAlign];
 
   return (
@@ -80,21 +109,39 @@ export function EnvironmentalScene({
       >
         {!imageError && (
           <Image
-            src={media.src}
+            src={imageSrc}
             alt={media.alt}
             fill
             priority={priority}
             className="object-cover"
             style={{ objectPosition: focalToObjectPosition(media.focal) }}
-            onError={() => setImageError(true)}
+            onError={handleImageError}
             sizes="100vw"
           />
         )}
       </div>
 
-      {showLegibility && (
-        <div className="legibility-gradient pointer-events-none absolute inset-0" aria-hidden />
+      {showAtmosphericWash && (
+        <div className="atmospheric-fog pointer-events-none absolute inset-0" aria-hidden />
       )}
+
+      {showLegibility && (
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-0",
+            overlayVariant === "editorial"
+              ? "legibility-gradient-editorial"
+              : "legibility-gradient",
+          )}
+          aria-hidden
+        />
+      )}
+
+      {showSideVignette && (
+        <div className="enter-landscape__vignette pointer-events-none absolute inset-0" aria-hidden />
+      )}
+
+      {decorativeOverlay}
 
       {/* Optional ambient sound — user-initiated only */}
       {ambientSoundSrc && (
@@ -121,6 +168,7 @@ export function EnvironmentalScene({
         className={cn(
           "relative z-10 flex min-h-[inherit] flex-col px-4 md:px-8",
           alignClass,
+          contentClassName,
         )}
       >
         {showLocation && (media.location || media.time) && (
