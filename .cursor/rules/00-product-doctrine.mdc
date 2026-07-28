@@ -1,0 +1,41 @@
+---
+description: Core LOCUS product doctrine and scope
+alwaysApply: true
+---
+
+# Product Doctrine
+
+LOCUS is not a generic LMS, tourism guide, chatbot, bookmarking tool, or dashboard.
+
+The world is the curriculum. A real encounter becomes learning through:
+
+```text
+Encounter → Notice → Question → Capture → Contextualize → Connect
+→ Retrieve → Practice → Apply → Reflect → Create → Resurface
+```
+
+## Product architecture
+
+- OWLL: research, design, and experimentation house
+- LOCUS: persistent learning operating system
+- Field Notes: capture, reflection, and evidence layer
+- Journey Creator: creates reusable journey architecture
+- Orchestrator/Mentor: adapts and supports the experience for actual learners
+- Reviewer: checks learning design, factual quality, safety, accessibility, and readiness
+- Learner: notices, questions, gathers evidence, revises, creates, retrieves, and transfers
+
+## Canonical first proof
+
+Water Writes the Landscape at First Landing State Park.
+
+The prototype must prove:
+
+1. a place can become a structured learning environment
+2. one journey can adapt to different learners
+3. educators can author journeys without coding
+4. human judgment remains essential
+5. learning produces evidence and returns later
+
+## Boundaries
+
+Do not add payments, creator royalties, real GPS, school integrations, AR, a full knowledge graph, production auth, a generic marketplace, or live unrestricted AI unless explicitly requested after the core loop is complete.

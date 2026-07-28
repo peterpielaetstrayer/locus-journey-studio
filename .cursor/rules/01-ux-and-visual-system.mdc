@@ -1,0 +1,74 @@
+---
+description: Visual and interaction rules for Creator, Learner, and Orchestrator modes
+alwaysApply: true
+---
+
+# UX and Visual System
+
+## Experience character
+
+The product should feel cinematic but restrained, natural, quietly futuristic, premium, human, scholarly, tactile, field-notebook inspired, and highly legible outdoors.
+
+Avoid generic SaaS dashboard aesthetics, neon science-fiction styling, childish educational visuals, constant progress bars, excessive gradients or glassmorphism, dense field overlays, and gamification that competes with the place.
+
+## Mode-specific design
+
+### Learner Mode
+
+- mobile-first
+- image-led
+- one primary task per screen
+- large type and touch targets
+- minimal chrome
+- explicit capture choices
+- hints hidden until requested
+- no automatic lecture panels
+- field mode quieter than creator mode
+
+### Creator Mode
+
+- desktop/tablet first
+- map + structured editing
+- learning architecture made visible
+- contextual preview
+- safety, accessibility, evidence, adaptation, and resurfacing are first-class fields
+
+### Orchestrator Mode
+
+- learner cards and recent evidence
+- recommendations editable and overridable
+- limited meaningful alerts
+- no vanity analytics
+
+### Reviewer Mode
+
+- serious checklist
+- unresolved issues visible
+- current approval status unambiguous
+- no false implication of legal, park, or youth-program approval
+
+## Design tokens
+
+Conceptual palette:
+
+- tidal navy
+- cypress green
+- marsh olive
+- parchment
+- water blue
+- amber for questions
+- muted violet for mentor adaptations
+- soft red for safety only
+
+Use CSS variables. Do not hardcode colors throughout components.
+
+## Accessibility
+
+- 44px minimum touch targets
+- visible keyboard focus
+- reduced-motion support
+- semantic landmarks
+- alt text
+- no color-only communication
+- accessible list alternative for maps
+- transcripts/captions for audio

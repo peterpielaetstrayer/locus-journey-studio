@@ -1,0 +1,34 @@
+---
+description: Quality assurance, safety, privacy, and truthfulness
+alwaysApply: true
+---
+
+# Quality and Safety
+
+## Current journey status
+
+Represent Water Writes the Landscape as a prototype and Field-Test Draft. It may advance only to Approved for Private Adult Co-Design Walk in the demo.
+
+Never imply park approval, legal approval, insurance coverage, public youth-program readiness, or scientific expert certification.
+
+## Safety fields
+
+Every journey stop should support route risk, prohibited actions, accessibility alternative, weather constraint, emergency note, technology-failure fallback, and reviewer status.
+
+## Privacy
+
+Show what is saved, whether a note is private or mentor-visible, whether it enters an artifact, and that service data is not automatically research data.
+
+Do not implement public-sharing dark patterns.
+
+## Quality review
+
+Include learning design, factual integrity, sources, safety, accessibility, adult field test, learner pilot, maintenance date, and unresolved issues.
+
+## Truthfulness
+
+- label mock analytics
+- label deterministic AI
+- report incomplete features honestly
+- do not fabricate integration
+- do not claim production readiness

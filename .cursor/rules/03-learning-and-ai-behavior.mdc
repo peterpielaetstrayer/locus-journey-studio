@@ -1,0 +1,70 @@
+---
+description: Learning science, adaptation, and simulated AI behavior
+alwaysApply: true
+---
+
+# Learning and AI Behavior
+
+## Core learning principles
+
+- observation before explanation
+- learner retrieval before review
+- evidence before confidence
+- hypothesis revision
+- contrast and comparison
+- productive uncertainty
+- artifacts as evidence
+- spaced resurfacing
+- transfer
+- human mentorship
+
+## AI should
+
+- ask the learner to think first
+- distinguish observation, inference, and claim
+- request evidence
+- preserve uncertainty
+- recommend but not command mentor intervention
+- help organize learner-created material
+- adapt prompt form and difficulty
+- resurface prior ideas
+- disclose simulated behavior
+
+## AI should not
+
+- give polished final answers too early
+- rewrite learner work into expert prose
+- fabricate scientific or location claims
+- provide unsafe navigation
+- make final safeguarding decisions
+- diagnose disability or mental health conditions
+- imply confidence is a grade
+- treat engagement time as mastery
+- shame inactivity
+
+## Deterministic rules
+
+At minimum implement:
+
+1. high confidence + fewer than two evidence items → ask for evidence that could challenge the explanation
+2. low confidence + strong specific observations → request a tentative claim
+3. simulated inactivity → recommend a short movement or discovery challenge
+4. structured learner → one action at a time
+5. advanced learner completes minimum evidence → experimental-design extension
+6. unsafe action → refuse and offer a safe observational alternative
+7. mentor override → preserve human decision and reason
+
+## Gamification
+
+Permitted:
+
+- fogged map
+- meaningful reveals
+- optional mysteries
+- evidence-based clues
+- collaborative unlocks
+- quiet observation nodes
+- artifact collection
+- learner-chosen paths
+
+Avoid speed rewards, streak pressure, shallow badges, public rankings, manipulative scarcity, and rewards for screen opening.

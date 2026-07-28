@@ -1,0 +1,65 @@
+---
+description: Technical architecture and implementation constraints
+alwaysApply: true
+---
+
+# Engineering Architecture
+
+## Stack
+
+Use Next.js App Router, TypeScript strict mode, Tailwind CSS, accessible component primitives, Lucide icons, Zustand or lightweight reducer state, localStorage persistence, a local deterministic adaptation engine, static media assets, and a local illustrated map or SVG.
+
+Do not require external API keys, a production database, auth provider, payment processor, map provider, or live AI service for v0.1.
+
+## Structure
+
+Prefer:
+
+```text
+src/
+├── app/
+├── components/
+│   ├── shared/
+│   ├── creator/
+│   ├── learner/
+│   ├── orchestrator/
+│   └── review/
+├── data/
+├── lib/
+├── hooks/
+├── store/
+├── types/
+└── assets/
+```
+
+## State
+
+Persist selected role, selected learner, learner progress, Field Notes, confidence, adaptive branch, mentor interventions, systems map, artifact, and resurfacing completion.
+
+Provide a reliable demo reset.
+
+## Simulated intelligence
+
+Keep adaptation rules pure and testable. Inputs should include learner profile, current stop, recent Field Notes, confidence, evidence count, inactivity simulation, mentor override, and accessibility preferences.
+
+Outputs should include recommended prompt, reason, category, severity, and optional creator-authored fallback.
+
+## Code quality
+
+- avoid `any`
+- centralize canonical mock data
+- keep components focused
+- do not duplicate journey text
+- use meaningful names
+- handle loading, empty, and error states
+- do not over-engineer backend abstractions
+
+## Validation
+
+Every milestone must run:
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
