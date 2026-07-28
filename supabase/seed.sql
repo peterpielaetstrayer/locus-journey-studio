@@ -186,3 +186,5 @@ insert into public.artifacts (
 
 -- Journey reviews are created when an authenticated reviewer signs in.
 -- See docs/backend-setup.md for linking the first adult user.
+-- No Auth users, passwords, or service-role credentials belong in this file.
+-- Orchestrator assignments for RLS tests are applied in supabase/tests/database/rls_test.sql.

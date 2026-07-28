@@ -174,6 +174,15 @@ export function mapJourneyStatusToDb(status: Journey["status"]): string {
   return map[status];
 }
 
+export const EDITABLE_JOURNEY_VERSION_STATUSES = [
+  "concept",
+  "draft",
+  "field_test",
+  "field-test",
+  "private_adult_walk",
+  "private-adult-walk",
+] as const;
+
 export function isVersionEditable(status: string): boolean {
-  return !["published", "archived"].includes(status);
+  return (EDITABLE_JOURNEY_VERSION_STATUSES as readonly string[]).includes(status);
 }

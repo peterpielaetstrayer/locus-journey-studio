@@ -1,10 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import {
-  ADAPTIVE_BRANCHES,
-  JOURNEY_STOPS,
-  REVIEW_STATUS,
-  WATER_WRITES_JOURNEY,
-} from "@/data/canonical";
+import { JOURNEY_STOPS, REVIEW_STATUS, WATER_WRITES_JOURNEY } from "@/data/canonical";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type {
@@ -29,19 +24,19 @@ import type {
 import {
   isVersionEditable,
   mapDbStatusToJourneyStatus,
-  mapJourneyStatusToDb,
 } from "./local";
+import {
+  CANONICAL_JOURNEY_ID,
+  CANONICAL_VERSION_ID,
+  OWLL_ORG_ID,
+} from "@/lib/auth/authorize";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- hand-written Database types omit Relationships; use loose client for repository layer
-type Db = SupabaseClient<any, "public", any>;
+type Db = SupabaseClient<Database>;
 type JourneyVersionRow = Database["public"]["Tables"]["journey_versions"]["Row"];
 type JourneyStopRow = Database["public"]["Tables"]["journey_stops"]["Row"];
+type AdaptiveBranchRow = Database["public"]["Tables"]["adaptive_branches"]["Row"];
 type FieldNoteRow = Database["public"]["Tables"]["field_notes"]["Row"];
 type InterventionRow = Database["public"]["Tables"]["mentor_interventions"]["Row"];
-
-const OWLL_ORG_ID = "00000000-0000-4000-8000-000000000001";
-const CANONICAL_JOURNEY_ID = "00000000-0000-4000-8000-000000000010";
-const CANONICAL_VERSION_ID = "00000000-0000-4000-8000-000000000011";
 
 const LEARNER_ID_MAP: Record<string, string> = {
   "learner-maya": "00000000-0000-4000-8000-000000000030",
@@ -66,10 +61,30 @@ const STOP_ID_MAP: Record<string, string> = {
   "stop-exit-claim": "00000000-0000-4000-8000-000000000027",
 };
 
-function mapStopRow(row: JourneyStopRow): JourneyStop {
-  const canonical = JOURNEY_STOPS.find((s) => s.id === reverseStopId(row.id));
+function reverseStopId(dbId: string): string | undefined {
+  return Object.entries(STOP_ID_MAP).find(([, v]) => v === dbId)?.[0];
+}
+
+function mapBranchRow(row: AdaptiveBranchRow, stopKey: string): AdaptiveBranch {
   return {
-    id: reverseStopId(row.id) ?? row.slug,
+    id: row.id,
+    stopId: stopKey,
+    name: row.name,
+    learnerType: row.learner_type as AdaptiveBranch["learnerType"],
+    activationType: row.activation_type as AdaptiveBranch["activationType"],
+    triggerDescription: row.trigger_description,
+    prompt: row.prompt,
+    action: row.action,
+    evidenceExpectation: row.evidence_expectation,
+    returnToCore: row.return_to_core,
+  };
+}
+
+function mapStopRow(row: JourneyStopRow, branches: AdaptiveBranch[]): JourneyStop {
+  const canonical = JOURNEY_STOPS.find((s) => s.id === reverseStopId(row.id));
+  const stopKey = reverseStopId(row.id) ?? row.slug;
+  return {
+    id: stopKey,
     journeyId: "journey-water-writes",
     order: row.position,
     title: row.title,
@@ -80,7 +95,7 @@ function mapStopRow(row: JourneyStopRow): JourneyStop {
     openingPrompt: row.opening_prompt,
     fieldAction: row.field_action,
     evidenceRequirementIds: [],
-    branchIds: ADAPTIVE_BRANCHES.filter((b) => b.stopId === reverseStopId(row.id)).map((b) => b.id),
+    branchIds: branches.filter((b) => b.stopId === stopKey).map((b) => b.id),
     mentorInterventionIds: [],
     safetyNotes: row.safety_notes,
     accessibilityAlternatives: row.accessibility_alternatives,
@@ -91,10 +106,6 @@ function mapStopRow(row: JourneyStopRow): JourneyStop {
     mapX: canonical?.mapX ?? 50,
     mapY: canonical?.mapY ?? 50,
   };
-}
-
-function reverseStopId(dbId: string): string | undefined {
-  return Object.entries(STOP_ID_MAP).find(([, v]) => v === dbId)?.[0];
 }
 
 function mapVersionToJourney(version: JourneyVersionRow): Journey {
@@ -120,18 +131,50 @@ async function recordAudit(
   action: string,
   metadata: Record<string, unknown> = {},
 ) {
-  const {
-    data: { user },
-  } = await db.auth.getUser();
-  if (!user) return;
-  await db.from("audit_events").insert({
-    organization_id: OWLL_ORG_ID,
-    actor_profile_id: user.id,
-    entity_type: entityType,
-    entity_id: entityId,
-    action,
-    metadata,
+  await db.rpc("record_audit_event", {
+    p_organization_id: OWLL_ORG_ID,
+    p_entity_type: entityType,
+    p_entity_id: entityId,
+    p_action: action,
+    p_metadata: metadata as Database["public"]["Functions"]["record_audit_event"]["Args"]["p_metadata"],
   });
+}
+
+async function loadDraftFromVersion(
+  db: Db,
+  version: JourneyVersionRow,
+): Promise<{
+  journey: Journey;
+  stops: JourneyStop[];
+  branches: AdaptiveBranch[];
+  versionId: string;
+  versionLabel: string;
+  savedAt: string;
+  isEditable: boolean;
+}> {
+  const { data: stops } = await db
+    .from("journey_stops")
+    .select("*")
+    .eq("journey_version_id", version.id)
+    .order("position");
+  const stopRows = stops ?? [];
+  const { data: branchRows } = await db
+    .from("adaptive_branches")
+    .select("*")
+    .in("journey_stop_id", stopRows.map((s) => s.id));
+  const branches = (branchRows ?? []).map((b) =>
+    mapBranchRow(b, reverseStopId(b.journey_stop_id) ?? b.journey_stop_id),
+  );
+  const mappedStops = stopRows.map((s) => mapStopRow(s, branches));
+  return {
+    journey: mapVersionToJourney(version),
+    stops: mappedStops,
+    branches,
+    versionId: version.id,
+    versionLabel: version.version_label,
+    savedAt: version.created_at,
+    isEditable: isVersionEditable(version.status),
+  };
 }
 
 function createJourneyRepository(db: Db): JourneyRepository {
@@ -145,39 +188,14 @@ function createJourneyRepository(db: Db): JourneyRepository {
         .eq("id", CANONICAL_VERSION_ID)
         .single();
       if (!version) return null;
-      const { data: stops } = await db
-        .from("journey_stops")
-        .select("*")
-        .eq("journey_version_id", version.id)
-        .order("position");
-      const { data: branches } = await db
-        .from("adaptive_branches")
-        .select("*")
-        .in("journey_stop_id", (stops ?? []).map((s) => s.id));
-      return {
-        journey: mapVersionToJourney(version),
-        stops: (stops ?? []).map(mapStopRow),
-        branches: (branches ?? []).map((b) => ({
-          id: b.id,
-          stopId: reverseStopId(b.journey_stop_id) ?? b.journey_stop_id,
-          name: b.name,
-          learnerType: b.learner_type as AdaptiveBranch["learnerType"],
-          activationType: b.activation_type as AdaptiveBranch["activationType"],
-          triggerDescription: b.trigger_description,
-          prompt: b.prompt,
-          action: b.action,
-          evidenceExpectation: b.evidence_expectation,
-          returnToCore: b.return_to_core,
-        })),
-        versionId: version.id,
-        versionLabel: version.version_label,
-        savedAt: version.created_at,
-        isEditable: isVersionEditable(version.status),
-      };
+      return loadDraftFromVersion(db, version);
     },
     async saveDraft(draft) {
       if (!draft.versionId) throw new Error("Missing version id");
       if (!draft.isEditable) throw new Error("Cannot edit published or archived versions");
+      const {
+        data: { user },
+      } = await db.auth.getUser();
       const { error: versionError } = await db
         .from("journey_versions")
         .update({
@@ -187,7 +205,6 @@ function createJourneyRepository(db: Db): JourneyRepository {
           audience: draft.journey.audience,
           duration_minutes: draft.journey.durationMinutes,
           learning_domains: draft.journey.learningDomains,
-          status: mapJourneyStatusToDb(draft.journey.status),
         })
         .eq("id", draft.versionId);
       if (versionError) throw versionError;
@@ -205,11 +222,16 @@ function createJourneyRepository(db: Db): JourneyRepository {
           })
           .eq("id", dbStopId);
       }
-      await recordAudit(db, "journey_version", draft.versionId, "draft_saved");
+      await recordAudit(db, "journey_version", draft.versionId, "draft_saved", {
+        editor: user?.id,
+      });
       return { ...draft, savedAt: new Date().toISOString() };
     },
     async createDraftVersion(slug) {
       if (slug !== "water-writes-the-landscape") throw new Error("Unknown journey");
+      const {
+        data: { user },
+      } = await db.auth.getUser();
       const { data: current } = await db
         .from("journey_versions")
         .select("*")
@@ -232,32 +254,78 @@ function createJourneyRepository(db: Db): JourneyRepository {
           prerequisite_concepts: current.prerequisite_concepts,
           artifact_template: current.artifact_template,
           supersedes_version_id: current.id,
+          created_by: user?.id ?? null,
         })
         .select("*")
         .single();
       if (error || !newVersion) throw error ?? new Error("Failed to create version");
-      const { data: stops } = await db
+
+      const { data: sourceStops } = await db
         .from("journey_stops")
         .select("*")
-        .eq("journey_version_id", current.id);
-      for (const stop of stops ?? []) {
-        const copy = { ...(stop as JourneyStopRow) };
-        delete (copy as { id?: string }).id;
-        copy.journey_version_id = newVersion.id;
-        await db.from("journey_stops").insert(copy);
+        .eq("journey_version_id", current.id)
+        .order("position");
+      const stopIdMap = new Map<string, string>();
+
+      for (const stop of sourceStops ?? []) {
+        const copy: Database["public"]["Tables"]["journey_stops"]["Insert"] = {
+          journey_version_id: newVersion.id,
+          position: stop.position,
+          slug: stop.slug,
+          title: stop.title,
+          location_label: stop.location_label,
+          purpose: stop.purpose,
+          central_concept: stop.central_concept,
+          learning_objective: stop.learning_objective,
+          opening_prompt: stop.opening_prompt,
+          field_action: stop.field_action,
+          evidence_requirements: stop.evidence_requirements,
+          mentor_interventions: stop.mentor_interventions,
+          safety_notes: stop.safety_notes,
+          accessibility_alternatives: stop.accessibility_alternatives,
+          artifact_contribution: stop.artifact_contribution,
+          resurfacing_connection: stop.resurfacing_connection,
+          is_optional: stop.is_optional,
+          is_hidden_until_unlocked: stop.is_hidden_until_unlocked,
+        };
+        const { data: insertedStop, error: stopError } = await db
+          .from("journey_stops")
+          .insert(copy)
+          .select("id")
+          .single();
+        if (stopError || !insertedStop) throw stopError ?? new Error("Failed to copy stop");
+        stopIdMap.set(stop.id, insertedStop.id);
       }
+
+      const sourceStopIds = (sourceStops ?? []).map((s) => s.id);
+      if (sourceStopIds.length > 0) {
+        const { data: sourceBranches } = await db
+          .from("adaptive_branches")
+          .select("*")
+          .in("journey_stop_id", sourceStopIds);
+        for (const branch of sourceBranches ?? []) {
+          const newStopId = stopIdMap.get(branch.journey_stop_id);
+          if (!newStopId) continue;
+          const { error: branchError } = await db.from("adaptive_branches").insert({
+            journey_stop_id: newStopId,
+            name: branch.name,
+            learner_type: branch.learner_type,
+            activation_type: branch.activation_type,
+            trigger_description: branch.trigger_description,
+            prompt: branch.prompt,
+            action: branch.action,
+            evidence_expectation: branch.evidence_expectation,
+            return_to_core: branch.return_to_core,
+            created_by: user?.id ?? null,
+          });
+          if (branchError) throw branchError;
+        }
+      }
+
       await recordAudit(db, "journey_version", newVersion.id, "version_created", {
         supersedes: current.id,
       });
-      return {
-        journey: mapVersionToJourney(newVersion),
-        stops: (stops ?? []).map(mapStopRow),
-        branches: ADAPTIVE_BRANCHES.map((b) => ({ ...b })),
-        versionId: newVersion.id,
-        versionLabel: newVersion.version_label,
-        isEditable: true,
-        savedAt: newVersion.created_at,
-      };
+      return loadDraftFromVersion(db, newVersion);
     },
     async listVersions(slug) {
       if (slug !== "water-writes-the-landscape") return [];
@@ -337,30 +405,41 @@ function createFieldNotesRepository(db: Db): FieldNotesRepository {
       const stopId = STOP_ID_MAP[input.stopId] ?? input.stopId;
       const learnerProfileId = LEARNER_ID_MAP[input.learnerId] ?? input.learnerId;
       let mediaAssetId: string | undefined;
+      let objectPath: string | undefined;
+
       if (input.mediaFile) {
         const ext = input.mediaFile.name.split(".").pop() ?? "jpg";
-        const objectPath = `${OWLL_ORG_ID}/${user.id}/${enrollmentId}/${crypto.randomUUID()}-upload.${ext}`;
-        const { error: uploadError } = await db.storage
-          .from("field-media")
-          .upload(objectPath, input.mediaFile, { contentType: input.mediaFile.type });
-        if (uploadError) throw uploadError;
+        objectPath = `${OWLL_ORG_ID}/${user.id}/${enrollmentId}/${crypto.randomUUID()}-upload.${ext}`;
+        const visibility = input.visibility === "private" ? "private" : "mentor";
+
         const { data: asset, error: assetError } = await db
           .from("media_assets")
           .insert({
             organization_id: OWLL_ORG_ID,
             owner_profile_id: user.id,
+            journey_enrollment_id: enrollmentId,
             bucket: "field-media",
             object_path: objectPath,
             mime_type: input.mediaFile.type,
             size_bytes: input.mediaFile.size,
             alt_text: input.altText ?? "Field capture",
-            visibility: input.visibility === "private" ? "private" : "mentor",
+            visibility,
           })
           .select("id")
           .single();
-        if (assetError) throw assetError;
+        if (assetError || !asset) throw assetError ?? new Error("Failed to register media asset");
+
+        const { error: uploadError } = await db.storage
+          .from("field-media")
+          .upload(objectPath, input.mediaFile, { contentType: input.mediaFile.type });
+
+        if (uploadError) {
+          await db.from("media_assets").delete().eq("id", asset.id);
+          throw uploadError;
+        }
         mediaAssetId = asset.id;
       }
+
       const { data, error } = await db
         .from("field_notes")
         .insert({
@@ -382,7 +461,15 @@ function createFieldNotesRepository(db: Db): FieldNotesRepository {
         })
         .select("*")
         .single();
-      if (error || !data) throw error ?? new Error("Failed to save field note");
+
+      if (error || !data) {
+        if (objectPath && mediaAssetId) {
+          await db.storage.from("field-media").remove([objectPath]);
+          await db.from("media_assets").delete().eq("id", mediaAssetId);
+        }
+        throw error ?? new Error("Failed to save field note");
+      }
+
       await recordAudit(db, "field_note", data.id, "created");
       return mapFieldNoteRow(data);
     },
@@ -611,7 +698,7 @@ function createReviewsRepository(db: Db): ReviewsRepository {
           {
             journey_version_id: review.versionId,
             reviewer_profile_id: user.id,
-            category: dbCategory ?? "learning_design",
+            category: dbCategory as Database["public"]["Tables"]["journey_reviews"]["Row"]["category"],
             status: review.status,
             notes: review.notes,
             updated_at: new Date().toISOString(),
@@ -634,7 +721,7 @@ function createReviewsRepository(db: Db): ReviewsRepository {
 }
 
 export async function createSupabaseRepositories(): Promise<RepositoryBundle> {
-  const db = (await createClient()) as Db;
+  const db = await createClient();
   return {
     mode: "connected",
     journeys: createJourneyRepository(db),

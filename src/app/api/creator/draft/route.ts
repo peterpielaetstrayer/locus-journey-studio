@@ -1,27 +1,34 @@
 import { NextResponse } from "next/server";
-import { getRepositories } from "@/lib/repositories";
+import {
+  mapAuthErrorToResponse,
+  requireAuthenticatedUser,
+  requireEditableJourneyVersion,
+  requireJourneyAccess,
+} from "@/lib/auth/authorize";
+import { getConnectedRepositories } from "@/lib/repositories";
 
 export async function GET() {
   try {
-    const repos = await getRepositories();
+    const ctx = await requireAuthenticatedUser();
+    await requireJourneyAccess(ctx);
+    const repos = await getConnectedRepositories();
     const draft = await repos.journeys.getCanonicalDraft("water-writes-the-landscape");
     if (!draft) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(draft);
-  } catch {
-    return NextResponse.json({ error: "Unauthorized or unavailable" }, { status: 401 });
+  } catch (error) {
+    return mapAuthErrorToResponse(error);
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    const repos = await getRepositories();
-    if (repos.mode !== "connected") {
-      return NextResponse.json({ error: "Connected Mode required" }, { status: 400 });
-    }
+    const ctx = await requireAuthenticatedUser();
+    await requireEditableJourneyVersion(ctx);
     const body = (await request.json()) as {
       centralQuestion?: string;
       cypressPrompt?: string;
     };
+    const repos = await getConnectedRepositories();
     const draft = await repos.journeys.getCanonicalDraft("water-writes-the-landscape");
     if (!draft) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (!draft.isEditable) {
@@ -41,26 +48,19 @@ export async function PUT(request: Request) {
     };
     const saved = await repos.journeys.saveDraft(updated);
     return NextResponse.json(saved);
-  } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Save failed" },
-      { status: 500 },
-    );
+  } catch (error) {
+    return mapAuthErrorToResponse(error);
   }
 }
 
 export async function POST() {
   try {
-    const repos = await getRepositories();
-    if (repos.mode !== "connected") {
-      return NextResponse.json({ error: "Connected Mode required" }, { status: 400 });
-    }
+    const ctx = await requireAuthenticatedUser();
+    await requireJourneyAccess(ctx, undefined, ["owner", "admin", "creator"]);
+    const repos = await getConnectedRepositories();
     const draft = await repos.journeys.createDraftVersion("water-writes-the-landscape");
     return NextResponse.json(draft);
-  } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Version creation failed" },
-      { status: 500 },
-    );
+  } catch (error) {
+    return mapAuthErrorToResponse(error);
   }
 }

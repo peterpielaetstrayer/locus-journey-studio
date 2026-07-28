@@ -17,11 +17,13 @@ describe("repository adapter selection", () => {
 });
 
 describe("version immutability logic", () => {
-  it("treats published and archived as not editable", () => {
+  it("treats published, archived, and learner_pilot as not editable", () => {
     expect(isVersionEditable("published")).toBe(false);
     expect(isVersionEditable("archived")).toBe(false);
+    expect(isVersionEditable("learner_pilot")).toBe(false);
     expect(isVersionEditable("draft")).toBe(true);
     expect(isVersionEditable("field_test")).toBe(true);
+    expect(isVersionEditable("private_adult_walk")).toBe(true);
   });
 });
 
