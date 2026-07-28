@@ -9,6 +9,7 @@ import { Card, CardTitle } from "@/components/shared/Card";
 import { CreatorRouteMap } from "@/components/creator/CreatorRouteMap";
 import { LearnerPreviewPanel } from "@/components/creator/LearnerPreviewPanel";
 import { StopEditorTabs } from "@/components/creator/StopEditorTabs";
+import { CreatorConnectedToolbar } from "@/components/creator/CreatorConnectedToolbar";
 
 export default function CreatorJourneyPage() {
   const cypressStop = JOURNEY_STOPS.find((s) => s.id === "stop-cypress-knee")!;
@@ -79,6 +80,7 @@ export default function CreatorJourneyPage() {
         </div>
 
         <aside className="space-y-6">
+          <CreatorConnectedToolbar />
           <LearnerPreviewPanel />
           <Card>
             <CardTitle className="text-base">Review status</CardTitle>
