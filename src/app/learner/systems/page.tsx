@@ -3,19 +3,28 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SystemsMapEditor } from "@/components/learner/SystemsMapEditor";
+import { EvidenceReveal } from "@/components/learner/EvidenceReveal";
+import { EnvironmentalScene } from "@/components/learner/EnvironmentalScene";
 import { Button } from "@/components/shared/Button";
-import { useDemoStore } from "@/store/demo-store";
+import { getMedia } from "@/data/first-landing-media";
+import { useDemoStore, getNotesForLearner } from "@/store/demo-store";
 
 export default function SystemsPage() {
   const { activeLearnerId } = useDemoStore();
+  const notes = getNotesForLearner(activeLearnerId);
+  const observations = notes.map((n) => n.observation);
 
   return (
     <article>
-      <p className="mb-1 text-xs uppercase tracking-wide text-secondary">Stop 7</p>
-      <h2 className="mb-2 text-2xl font-semibold">Build the System</h2>
-      <p className="mb-6 text-muted">
-        Connect rainfall, water level, soil, plants, and trail design. Mark one uncertainty.
-      </p>
+      <EnvironmentalScene
+        media={getMedia("systemsOverlook")}
+        contentAlign="bottom"
+        className="mb-6 min-h-[30vh] rounded-xl"
+      >
+        <p className="pb-2 text-sm text-foreground/80">Build the system from your evidence</p>
+      </EnvironmentalScene>
+
+      <EvidenceReveal learnerObservations={observations} className="mb-8" />
 
       <SystemsMapEditor learnerId={activeLearnerId} />
 

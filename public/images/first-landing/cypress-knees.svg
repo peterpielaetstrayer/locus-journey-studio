@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="Development placeholder  cypress knees at water edge">
+  <defs>
+    <linearGradient id="grove" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2820"/>
+      <stop offset="100%" stop-color="#0f1814"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#grove)"/>
+  <ellipse cx="960" cy="820" rx="800" ry="120" fill="#1e3a42" opacity="0.5"/>
+  <!-- cypress knees -->
+  <ellipse cx="480" cy="780" rx="35" ry="55" fill="#2a3028"/>
+  <ellipse cx="620" cy="760" rx="28" ry="48" fill="#2a3028"/>
+  <ellipse cx="780" cy="790" rx="40" ry="60" fill="#2a3028"/>
+  <ellipse cx="960" cy="770" rx="32" ry="52" fill="#2a3028"/>
+  <ellipse cx="1140" cy="785" rx="38" ry="58" fill="#2a3028"/>
+  <ellipse cx="1320" cy="765" rx="30" ry="50" fill="#2a3028"/>
+  <!-- trunk -->
+  <rect x="920" y="200" width="40" height="580" rx="6" fill="#1a2420"/>
+  <text x="960" y="1040" text-anchor="middle" fill="#5a6a60" font-family="system-ui,sans-serif" font-size="14" opacity="0.5">Dev placeholder  cypress-knees.webp</text>
+</svg>

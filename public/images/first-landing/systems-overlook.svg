@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="Development placeholder  systems overlook">
+  <defs>
+    <linearGradient id="overlook" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3028"/>
+      <stop offset="100%" stop-color="#152018"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#overlook)"/>
+  <!-- zones -->
+  <ellipse cx="500" cy="700" rx="300" ry="100" fill="#1e3a42" opacity="0.5"/>
+  <ellipse cx="960" cy="650" rx="250" ry="80" fill="#2a4038" opacity="0.4"/>
+  <ellipse cx="1400" cy="720" rx="280" ry="90" fill="#1a3028" opacity="0.5"/>
+  <!-- boardwalk -->
+  <path d="M 100 850 Q 500 780 960 760 Q 1420 740 1820 800" fill="none" stroke="#4a5a50" stroke-width="6" opacity="0.5"/>
+  <text x="960" y="1040" text-anchor="middle" fill="#5a6a60" font-family="system-ui,sans-serif" font-size="14" opacity="0.5">Dev placeholder  systems-overlook.webp</text>
+</svg>

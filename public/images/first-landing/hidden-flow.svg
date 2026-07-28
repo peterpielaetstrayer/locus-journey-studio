@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="Development placeholder  still water quiet overlook">
+  <defs>
+    <linearGradient id="calm" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2a4850"/>
+      <stop offset="50%" stop-color="#1e3840"/>
+      <stop offset="100%" stop-color="#152820"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#calm)"/>
+  <ellipse cx="960" cy="600" rx="850" ry="200" fill="#1a3040" opacity="0.4"/>
+  <!-- subtle reflection lines -->
+  <line x1="400" y1="580" x2="1520" y2="580" stroke="#3a5860" stroke-width="1" opacity="0.3"/>
+  <line x1="500" y1="620" x2="1420" y2="620" stroke="#3a5860" stroke-width="1" opacity="0.2"/>
+  <text x="960" y="1040" text-anchor="middle" fill="#5a6a60" font-family="system-ui,sans-serif" font-size="14" opacity="0.5">Dev placeholder  hidden-flow.webp</text>
+</svg>

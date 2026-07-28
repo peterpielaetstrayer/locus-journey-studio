@@ -16,6 +16,15 @@
   --muted: 205 15% 67%;
   --border: 198 18% 28%;
   --ring: 157 28% 43%;
+  /* Magic Pass environmental tokens */
+  --env-black: 207 40% 6%;
+  --wetland-green: 157 28% 32%;
+  --water-blue: 193 45% 38%;
+  --fog: 203 25% 18%;
+  --field-note-paper: 42 38% 92%;
+  --field-note-ink: 205 24% 18%;
+  --map-ink: 40 42% 70%;
+  --quiet-amber: 39 65% 55%;
 }
 
 @theme inline {
@@ -34,6 +43,14 @@
   --color-muted: hsl(var(--muted));
   --color-border: hsl(var(--border));
   --color-ring: hsl(var(--ring));
+  --color-env-black: hsl(var(--env-black));
+  --color-wetland-green: hsl(var(--wetland-green));
+  --color-water-blue: hsl(var(--water-blue));
+  --color-fog: hsl(var(--fog));
+  --color-field-note-paper: hsl(var(--field-note-paper));
+  --color-field-note-ink: hsl(var(--field-note-ink));
+  --color-map-ink: hsl(var(--map-ink));
+  --color-quiet-amber: hsl(var(--quiet-amber));
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
 }
@@ -104,4 +121,105 @@ body {
     hsl(39 30% 75%) 60%,
     hsl(157 20% 35%) 100%
   );
+}
+
+/* Magic Pass environmental surfaces */
+.env-scene-root {
+  background-color: hsl(var(--env-black));
+}
+
+.legibility-gradient {
+  background: linear-gradient(
+    to top,
+    hsl(var(--env-black) / 0.92) 0%,
+    hsl(var(--env-black) / 0.6) 35%,
+    hsl(var(--env-black) / 0.15) 70%,
+    transparent 100%
+  );
+}
+
+.atmospheric-fog {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 40%,
+    hsl(var(--fog) / 0.5) 0%,
+    transparent 70%
+  );
+}
+
+.field-note-surface {
+  background: hsl(var(--field-note-paper));
+  color: hsl(var(--field-note-ink));
+  box-shadow:
+    0 1px 3px hsl(var(--env-black) / 0.15),
+    inset 0 0 0 1px hsl(var(--field-note-ink) / 0.06);
+}
+
+.atlas-surface {
+  background: hsl(var(--parchment));
+  color: hsl(var(--parchment-ink));
+}
+
+/* Motion — disabled via prefers-reduced-motion global rule */
+@keyframes fog-clear {
+  from { opacity: 1; }
+  to { opacity: 0.3; }
+}
+
+@keyframes route-draw {
+  from { stroke-dashoffset: 200; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes evidence-pin {
+  from { opacity: 0; transform: translateY(8px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes systems-assemble {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes atlas-unfold {
+  from { opacity: 0; transform: perspective(800px) rotateX(4deg); }
+  to { opacity: 1; transform: perspective(800px) rotateX(0); }
+}
+
+@keyframes breathing-light {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.motion-fog-clear {
+  animation: fog-clear 1.2s ease-out forwards;
+}
+
+.motion-route-draw {
+  animation: route-draw 1.5s ease-out forwards;
+}
+
+.motion-evidence-pin {
+  animation: evidence-pin 0.6s ease-out forwards;
+}
+
+.motion-systems-assemble {
+  animation: systems-assemble 0.5s ease-out forwards;
+}
+
+.motion-atlas-unfold {
+  animation: atlas-unfold 0.8s ease-out forwards;
+}
+
+.motion-breathing {
+  animation: breathing-light 4s ease-in-out infinite;
+}
+
+.env-type-large {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.env-type-serif {
+  font-family: var(--font-serif);
 }

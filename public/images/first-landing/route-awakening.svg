@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="Development placeholder  route awakening through fog">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e2e28"/>
+      <stop offset="50%" stop-color="#2a4038"/>
+      <stop offset="100%" stop-color="#152018"/>
+    </linearGradient>
+    <radialGradient id="fog" cx="70%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#4a6058" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#152018" stop-opacity="0.2"/>
+    </radialGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <rect width="1920" height="1080" fill="url(#fog)"/>
+  <!-- route line -->
+  <path d="M 200 900 Q 400 750 600 680 Q 800 600 1000 520" fill="none" stroke="#c4b896" stroke-width="3" stroke-dasharray="8 6" opacity="0.5"/>
+  <circle cx="200" cy="900" r="8" fill="#5a8a6a"/>
+  <circle cx="600" cy="680" r="8" fill="#5a8a6a" opacity="0.7"/>
+  <text x="960" y="1040" text-anchor="middle" fill="#5a6a60" font-family="system-ui,sans-serif" font-size="14" opacity="0.5">Dev placeholder  route-awakening.webp</text>
+</svg>

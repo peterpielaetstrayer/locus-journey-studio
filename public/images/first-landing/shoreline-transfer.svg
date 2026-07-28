@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="Development placeholder  Virginia Beach shoreline transfer">
+  <defs>
+    <linearGradient id="shore" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4a8090"/>
+      <stop offset="50%" stop-color="#8a9a88"/>
+      <stop offset="100%" stop-color="#3a5848"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#shore)"/>
+  <rect x="0" y="600" width="1920" height="480" fill="#c4b896" opacity="0.3"/>
+  <text x="960" y="1040" text-anchor="middle" fill="#5a6a60" font-family="system-ui,sans-serif" font-size="14" opacity="0.5">Dev placeholder  shoreline-transfer.webp</text>
+</svg>

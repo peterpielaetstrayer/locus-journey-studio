@@ -1,24 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { LearnerFieldNav } from "@/components/learner/LearnerFieldNav";
 
-const STEPS = [
-  { href: "/learner", label: "Start" },
-  { href: "/learner/preparation", label: "Prepare" },
-  { href: "/learner/threshold", label: "Threshold" },
-  { href: "/learner/map", label: "Map" },
-  { href: "/learner/water-fingerprints", label: "Observe" },
-  { href: "/learner/cypress-knee", label: "Mystery" },
-  { href: "/learner/comparison", label: "Compare" },
-  { href: "/learner/hidden-flow", label: "Still" },
-  { href: "/learner/human-path", label: "Path" },
-  { href: "/learner/systems", label: "System" },
-  { href: "/learner/exit-claim", label: "Claim" },
-  { href: "/learner/artifact", label: "Artifact" },
-  { href: "/learner/resurfacing", label: "Returns" },
-];
+const QUIET_ROUTES = ["/learner/hidden-flow"];
 
 export default function LearnerLayout({
   children,
@@ -26,36 +11,12 @@ export default function LearnerLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isQuiet = QUIET_ROUTES.some((r) => pathname.startsWith(r));
 
   return (
-    <div className="learner-surface min-h-[calc(100dvh-8rem)]">
-      <div className="mx-auto max-w-lg px-4 py-6 pb-24">{children}</div>
-      <nav
-        aria-label="Learner journey steps"
-        className="fixed bottom-0 left-0 right-0 border-t border-border bg-surface/95 backdrop-blur-sm"
-      >
-        <ul className="mx-auto flex max-w-lg overflow-x-auto gap-1 px-2 py-2">
-          {STEPS.map(({ href, label }) => {
-            const active = pathname === href;
-            return (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className={cn(
-                    "block min-h-11 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium",
-                    active
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted hover:text-foreground",
-                  )}
-                  aria-current={active ? "step" : undefined}
-                >
-                  {label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+    <div className="learner-surface min-h-dvh">
+      <div className="mx-auto max-w-lg px-4 py-4 pb-24">{children}</div>
+      <LearnerFieldNav hidden={isQuiet} />
     </div>
   );
 }

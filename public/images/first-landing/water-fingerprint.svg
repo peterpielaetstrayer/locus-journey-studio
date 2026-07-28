@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="Development placeholder  water fingerprint soil evidence">
+  <defs>
+    <linearGradient id="soil" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2a3530"/>
+      <stop offset="40%" stop-color="#1a2018"/>
+      <stop offset="100%" stop-color="#0f1410"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#soil)"/>
+  <!-- dark wet soil texture -->
+  <ellipse cx="960" cy="700" rx="700" ry="250" fill="#141810" opacity="0.8"/>
+  <!-- exposed roots -->
+  <path d="M 600 650 Q 720 580 840 620 Q 960 680 1080 600 Q 1200 560 1320 640" fill="none" stroke="#3a3028" stroke-width="12" opacity="0.6"/>
+  <path d="M 700 720 Q 800 680 900 710 Q 1000 750 1100 690" fill="none" stroke="#3a3028" stroke-width="8" opacity="0.5"/>
+  <!-- boardwalk plank edge -->
+  <rect x="0" y="850" width="1920" height="40" fill="#3a4540" opacity="0.5"/>
+  <text x="960" y="1040" text-anchor="middle" fill="#5a6a60" font-family="system-ui,sans-serif" font-size="14" opacity="0.5">Dev placeholder  water-fingerprint.webp</text>
+</svg>
