@@ -26,9 +26,9 @@ export default function WaterFingerprintsPage() {
 
       <FieldNoteCapture stopId="stop-water-fingerprints" />
 
-      <Link href="/learner/comparison" className="mt-8 block">
+      <Link href="/learner/cypress-knee" className="mt-8 block">
         <Button variant="secondary" size="lg" className="w-full">
-          Continue to comparison
+          Continue to Cypress-Knee Mystery
           <ArrowRight className="ml-2 h-5 w-5" aria-hidden />
         </Button>
       </Link>
