@@ -39,9 +39,9 @@ export default function ComparisonPage() {
         />
       </div>
 
-      <Link href="/learner/systems" onClick={() => saveComparison(notes)} className="mt-8 block">
+      <Link href="/learner/hidden-flow" onClick={() => saveComparison(notes)} className="mt-8 block">
         <Button size="lg" className="w-full">
-          Build the system
+          Continue to The Hidden Flow
           <ArrowRight className="ml-2 h-5 w-5" aria-hidden />
         </Button>
       </Link>

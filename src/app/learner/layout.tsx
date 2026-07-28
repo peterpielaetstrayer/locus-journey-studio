@@ -7,9 +7,13 @@ import { cn } from "@/lib/utils";
 const STEPS = [
   { href: "/learner", label: "Start" },
   { href: "/learner/preparation", label: "Prepare" },
+  { href: "/learner/threshold", label: "Threshold" },
   { href: "/learner/map", label: "Map" },
   { href: "/learner/water-fingerprints", label: "Observe" },
+  { href: "/learner/cypress-knee", label: "Mystery" },
   { href: "/learner/comparison", label: "Compare" },
+  { href: "/learner/hidden-flow", label: "Still" },
+  { href: "/learner/human-path", label: "Path" },
   { href: "/learner/systems", label: "System" },
   { href: "/learner/exit-claim", label: "Claim" },
   { href: "/learner/artifact", label: "Artifact" },
