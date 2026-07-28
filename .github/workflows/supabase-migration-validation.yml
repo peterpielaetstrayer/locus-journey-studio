@@ -1,0 +1,100 @@
+name: Supabase Migration Validation
+
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - "src/lib/repositories/**"
+      - "src/lib/auth/**"
+      - "src/app/api/**"
+      - "src/types/database.types.ts"
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-migration-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Isolated Supabase + app validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.110.0
+
+      - name: Cache Supabase Docker images
+        uses: actions/cache@v4
+        with:
+          path: ~/.supabase
+          key: supabase-docker-${{ hashFiles('supabase/config.toml') }}
+          restore-keys: |
+            supabase-docker-
+
+      - name: Start isolated local Supabase (Docker)
+        run: supabase start 2>&1 | tee supabase-start.log
+
+      - name: Reset local database (migrations + seed)
+        run: supabase db reset --local 2>&1 | tee supabase-db-reset.log
+
+      - name: Run pgTAP RLS tests (48 assertions)
+        run: supabase test db 2>&1 | tee supabase-test-db.log
+
+      - name: Lint local database schema
+        run: supabase db lint --local --fail-on error 2>&1 | tee supabase-db-lint.log
+
+      - name: Application unit tests
+        run: npm run test 2>&1 | tee npm-test.log
+
+      - name: Typecheck
+        run: npm run typecheck 2>&1 | tee npm-typecheck.log
+
+      - name: ESLint
+        run: npm run lint 2>&1 | tee npm-lint.log
+
+      - name: Production build
+        run: npm run build 2>&1 | tee npm-build.log
+        env:
+          # Demo mode build — no hosted Supabase credentials in CI
+          NEXT_PUBLIC_SUPABASE_URL: ""
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ""
+
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-validation-logs-${{ github.run_id }}
+          retention-days: 14
+          if-no-files-found: ignore
+          path: |
+            supabase-start.log
+            supabase-db-reset.log
+            supabase-test-db.log
+            supabase-db-lint.log
+            npm-test.log
+            npm-typecheck.log
+            npm-lint.log
+            npm-build.log
+            supabase/.temp/**
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup 2>&1 | tee supabase-stop.log || true

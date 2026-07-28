@@ -6,7 +6,7 @@ Prototype backend for **Connected Adult Creator Lab**. Anonymous Demo Mode works
 
 - Node.js 22+
 - Supabase CLI (`npm install -D supabase`)
-- A Supabase project (linked) or local Docker for full RLS test coverage
+- **Migration/RLS validation:** GitHub Actions is the authoritative gate when local Docker is unavailable (see [Supabase Migration Validation](../.github/workflows/supabase-migration-validation.yml)). For optional local runs: Docker Desktop + `supabase start`.
 
 ## Environment variables
 
@@ -36,7 +36,7 @@ npx supabase db push --dry-run
 npm run db:push
 ```
 
-Do not push until security review passes and `supabase test db` succeeds locally.
+Do not push until the **Supabase Migration Validation** GitHub Actions workflow passes on your PR (or a manual workflow dispatch). Locally, the same gate applies after `supabase test db` succeeds.
 
 ## First adult user (invite-only)
 
@@ -61,7 +61,7 @@ values
 |--------|---------|
 | `npm run db:push` | Push migrations to linked project |
 | `npm run db:types` | Regenerate `src/types/database.types.ts` after push |
-| `npm run db:test` | Run pgTAP RLS tests (requires local Supabase/Docker) |
+| `npm run db:test` | Run pgTAP RLS tests (local Docker, or rely on GitHub Actions) |
 
 ## Storage
 
@@ -90,13 +90,31 @@ See [permissions-matrix.md](./permissions-matrix.md).
 
 ## Validation
 
+### Authoritative CI gate (no hosted project access)
+
+Pull requests that touch `supabase/**`, repository/auth/API layers, or `src/types/database.types.ts` run the **Supabase Migration Validation** workflow. It:
+
+1. Starts an isolated local Supabase stack in GitHub Actions (Docker on `ubuntu-latest`)
+2. Runs `supabase db reset` against **local only** — never `db push`, never links to hosted project
+3. Executes all **48 pgTAP** assertions via `supabase test db`
+4. Runs `supabase db lint --local --fail-on error`
+5. Runs `npm run test`, `typecheck`, `lint`, and `build`
+
+No repository secrets, service-role keys, or hosted database passwords are required. Failures upload logs as workflow artifacts.
+
+Manual trigger: GitHub → Actions → **Supabase Migration Validation** → **Run workflow**.
+
+### Local validation (optional; requires Docker)
+
 ```bash
 npm run test
 npm run typecheck
 npm run lint
 npm run build
-npx supabase db lint
-npx supabase test db
+supabase start
+supabase db reset
+npx supabase db lint --local --fail-on error
+npm run db:test
 npx supabase db push --dry-run
 ```
 
