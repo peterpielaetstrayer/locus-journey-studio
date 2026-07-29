@@ -312,3 +312,143 @@ body {
     animation: none;
   }
 }
+
+/* Sprint A2 — field materials and capture tools */
+.field-sheet {
+  background:
+    linear-gradient(135deg, hsl(var(--field-note-paper) / 0.08) 0%, transparent 50%),
+    hsl(var(--env-black) / 0.55);
+  border: 1px solid hsl(var(--entrance-rule) / 0.35);
+  border-top: 2px solid hsl(var(--field-note-paper) / 0.25);
+  backdrop-filter: blur(6px);
+}
+
+.capture-mode-rail__tool {
+  border: 1px solid hsl(var(--entrance-rule) / 0.35);
+  background: hsl(var(--env-black) / 0.45);
+  color: hsl(var(--entrance-copy-muted));
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.capture-mode-rail__tool--selected {
+  border-color: hsl(var(--quiet-amber) / 0.7);
+  background: hsl(var(--env-black) / 0.65);
+  color: hsl(var(--field-note-paper));
+}
+
+.evidence-capture-slab {
+  background:
+    linear-gradient(180deg, hsl(var(--env-black) / 0.72) 0%, hsl(var(--env-black) / 0.88) 100%);
+  border-top: 1px solid hsl(var(--entrance-rule) / 0.4);
+  backdrop-filter: blur(8px);
+}
+
+.evidence-capture-slab--dock {
+  position: fixed;
+  bottom: 4.25rem;
+  left: 0;
+  right: 0;
+  z-index: 20;
+}
+
+.evidence-question {
+  border-left: 2px solid hsl(var(--quiet-amber) / 0.55);
+  padding-left: 1rem;
+}
+
+.theory-fragment {
+  background: hsl(var(--env-black) / 0.42);
+  border: 1px solid hsl(var(--field-note-paper) / 0.15);
+  backdrop-filter: blur(4px);
+  padding: 0.875rem 1rem;
+}
+
+.capture-reticle {
+  position: absolute;
+  inset: 18% 12% 32%;
+  pointer-events: none;
+}
+
+.capture-reticle__corner {
+  position: absolute;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-color: hsl(var(--quiet-amber) / 0.65);
+  border-style: solid;
+}
+
+.capture-reticle__corner--tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
+.capture-reticle__corner--tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+.capture-reticle__corner--bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+.capture-reticle__corner--br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+.atlas-spread {
+  background: hsl(var(--parchment));
+  color: hsl(var(--parchment-ink));
+  box-shadow:
+    0 2px 8px hsl(var(--env-black) / 0.2),
+    inset 0 0 0 1px hsl(var(--parchment-ink) / 0.06);
+}
+
+.atlas-spread__seam {
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    hsl(var(--parchment-ink) / 0.08) 48%,
+    hsl(var(--parchment-ink) / 0.12) 50%,
+    hsl(var(--parchment-ink) / 0.08) 52%,
+    transparent 100%
+  );
+}
+
+.atlas-tape {
+  background: hsl(42 30% 78% / 0.55);
+  box-shadow: 0 1px 2px hsl(var(--env-black) / 0.1);
+}
+
+.atlas-margin-note {
+  border-left: 2px solid hsl(var(--quiet-amber) / 0.6);
+  padding-left: 0.75rem;
+  font-style: italic;
+}
+
+.atlas-stamp {
+  border: 1px solid hsl(var(--parchment-ink) / 0.25);
+  border-radius: 9999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.safety-field-note {
+  border-left: 2px solid hsl(var(--danger) / 0.55);
+  padding-left: 0.75rem;
+  font-size: 0.75rem;
+  color: hsl(var(--danger) / 0.9);
+}
+
+.atlas-preview-chip {
+  background: hsl(var(--parchment) / 0.12);
+  border: 1px solid hsl(var(--parchment) / 0.22);
+  backdrop-filter: blur(4px);
+}
+
+@keyframes field-sheet-unfold {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes theory-settle {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.motion-field-sheet-unfold {
+  animation: field-sheet-unfold 0.5s ease-out forwards;
+}
+
+.motion-theory-settle {
+  animation: theory-settle 0.6s ease-out forwards;
+}

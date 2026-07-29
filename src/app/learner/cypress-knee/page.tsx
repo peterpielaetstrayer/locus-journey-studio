@@ -1,22 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Mic, Pencil, Type } from "lucide-react";
-import { Button } from "@/components/shared/Button";
-import { Label, Textarea, Select } from "@/components/shared/FormFields";
+import { Mic, Pencil, Type } from "lucide-react";
+import { Label, Textarea } from "@/components/shared/FormFields";
 import { EnvironmentalScene } from "@/components/learner/EnvironmentalScene";
 import { FieldNoteCapture } from "@/components/learner/FieldNoteCapture";
+import { TheoryFragment } from "@/components/learner/TheoryFragment";
+import { EvidenceQuestion } from "@/components/learner/EvidenceQuestion";
+import { ConfidenceLanguageControl } from "@/components/learner/ConfidenceLanguageControl";
+import { ExpeditionAction } from "@/components/learner/ExpeditionAction";
 import { getMedia } from "@/data/first-landing-media";
 import { getStopById } from "@/data/canonical";
 import { evaluateAdaptation, getEvidenceCount } from "@/lib/adaptation-engine";
-import { formatConfidence } from "@/lib/utils";
 import { useDemoStore, getNotesForLearner } from "@/store/demo-store";
 import { getLearnerById } from "@/data/canonical";
-import type { Confidence } from "@/types";
 import { cn } from "@/lib/utils";
+import type { Confidence } from "@/types";
 
 type ResponseMode = "speak" | "sketch" | "type" | "unsure";
+
+const RESPONSE_MODES = [
+  { id: "speak" as const, label: "Speak a theory", icon: Mic },
+  { id: "sketch" as const, label: "Sketch it", icon: Pencil },
+  { id: "type" as const, label: "Type it", icon: Type },
+  { id: "unsure" as const, label: "I'm not sure yet", icon: Type },
+] as const;
 
 export default function CypressKneePage() {
   const stop = getStopById("stop-cypress-knee")!;
@@ -78,7 +86,6 @@ export default function CypressKneePage() {
       confidence,
     });
 
-    // High confidence + weak evidence → specific prompt only
     if (confidence >= 3 && getEvidenceCount(notes) < 2) {
       setAdaptivePrompt(
         "What would you need to observe before trusting that explanation?",
@@ -100,151 +107,141 @@ export default function CypressKneePage() {
     setSubmitted(true);
   }
 
+  const displayTheory = mode === "unsure" ? "I'm not sure yet." : theory;
+
   return (
-    <article>
-      <EnvironmentalScene
-        media={getMedia("cypressKnees")}
-        contentAlign="bottom"
-        className="min-h-[45vh] rounded-xl"
-      >
-        <div className="relative w-full pb-2">
-          {/* Theory overlay layer */}
-          {submitted && theory && (
-            <div
-              className="mb-4 rounded-lg bg-env-black/50 p-3 backdrop-blur-sm"
-              aria-live="polite"
-            >
-              <p className="text-xs uppercase tracking-widest text-foreground/50">Your theory</p>
-              <p className="font-serif italic text-foreground/90">{theory}</p>
-            </div>
+    <EnvironmentalScene
+      media={getMedia("cypressKnees")}
+      fullViewport
+      overlayVariant="editorial"
+      showSideVignette
+      contentAlign="bottom"
+      showLocation
+      contentClassName="w-full px-0 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[max(3rem,env(safe-area-inset-top))]"
+    >
+      <div className="flex min-h-[calc(100dvh-4.5rem)] w-full flex-col self-start">
+        <div className="relative mx-4 flex-1 sm:mx-6">
+          {submitted && displayTheory && (
+            <TheoryFragment
+              theory={displayTheory}
+              className="absolute left-0 right-0 top-[12%] max-w-sm md:top-[18%]"
+            />
           )}
 
-          <p className="env-type-serif text-xl leading-relaxed text-foreground md:text-2xl">
-            These structures are doing something.
-          </p>
-          <p className="mt-2 text-lg text-foreground/85">
-            What do you think they are doing?
-          </p>
+          <header className="max-w-lg pb-36 pt-2 md:pb-44">
+            <p className="env-type-serif text-[clamp(1.375rem,4.5vw,2rem)] leading-snug text-foreground">
+              These structures are doing something.
+            </p>
+            <p className="mt-2 text-lg text-foreground/85">
+              What do you think they are doing?
+            </p>
+          </header>
         </div>
-      </EnvironmentalScene>
 
-      {/* Safety — integrated */}
-      <ul className="my-4 space-y-1 text-xs text-danger/90">
-        {stop.safetyNotes.map((note) => (
-          <li key={note}>{note}</li>
-        ))}
-      </ul>
+        <div className="evidence-capture-slab evidence-capture-slab--dock px-4 py-4 sm:px-6 sm:py-5">
+          <ul className="safety-field-note mb-4 space-y-1">
+            {stop.safetyNotes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
 
-      {!submitted ? (
-        <div className="space-y-4">
-          <fieldset>
-            <legend className="mb-2 text-sm font-medium">How will you respond?</legend>
-            <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  { id: "speak" as const, label: "Speak a theory", icon: Mic },
-                  { id: "sketch" as const, label: "Sketch it", icon: Pencil },
-                  { id: "type" as const, label: "Type it", icon: Type },
-                  { id: "unsure" as const, label: "I'm not sure yet", icon: Type },
-                ] as const
-              ).map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setMode(id)}
-                  className={cn(
-                    "flex min-h-11 items-center gap-2 rounded-lg border px-3 py-3 text-left text-sm",
-                    mode === id
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-surface/60",
+          {!submitted ? (
+            <div className="mx-auto max-w-lg space-y-4">
+              <fieldset>
+                <legend className="mb-2 text-xs uppercase tracking-[0.16em] text-foreground/70">
+                  How will you respond?
+                </legend>
+                <div className="grid grid-cols-2 gap-2">
+                  {RESPONSE_MODES.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setMode(id)}
+                      className={cn(
+                        "capture-mode-rail__tool flex min-h-11 items-center gap-2 px-3 py-3 text-left text-sm",
+                        mode === id && "capture-mode-rail__tool--selected",
+                      )}
+                      aria-pressed={mode === id}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              {mode && mode !== "unsure" && (
+                <div>
+                  <Label htmlFor="theory" className="text-xs uppercase tracking-[0.16em] text-foreground/70">
+                    Your theory
+                  </Label>
+                  <Textarea
+                    id="theory"
+                    value={theory}
+                    onChange={(e) => setTheory(e.target.value)}
+                    placeholder={
+                      mode === "speak"
+                        ? "Transcript of your spoken theory…"
+                        : mode === "sketch"
+                          ? "Describe your sketch…"
+                          : "What do you think these structures are doing?"
+                    }
+                    className="mt-2 border-[hsl(var(--entrance-rule)/0.25)] bg-[hsl(var(--env-black)/0.35)] text-foreground"
+                  />
+                  {mode === "speak" && (
+                    <p className="mt-1 text-xs text-foreground/50">
+                      Voice capture simulated — type your spoken words
+                    </p>
                   )}
-                  aria-pressed={mode === id}
-                >
-                  <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                  {label}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+                </div>
+              )}
 
-          {mode && mode !== "unsure" && (
-            <div>
-              <Label htmlFor="theory">Your theory</Label>
-              <Textarea
-                id="theory"
-                value={theory}
-                onChange={(e) => setTheory(e.target.value)}
-                placeholder={
-                  mode === "speak"
-                    ? "Transcript of your spoken theory…"
-                    : mode === "sketch"
-                      ? "Describe your sketch…"
-                      : "What do you think these structures are doing?"
-                }
-                className="bg-surface/80"
-              />
-              {mode === "speak" && (
-                <p className="mt-1 text-xs text-muted">
-                  Voice capture simulated — type your spoken words
-                </p>
+              {mode && (
+                <ConfidenceLanguageControl
+                  id="ck-confidence"
+                  value={confidence}
+                  onChange={setConfidence}
+                />
+              )}
+
+              {mode && (
+                <ExpeditionAction
+                  label="Record theory"
+                  disabled={mode !== "unsure" && !theory.trim()}
+                  onClick={handleSubmitTheory}
+                  className="w-full"
+                />
               )}
             </div>
-          )}
+          ) : (
+            <div className="mx-auto max-w-lg space-y-4">
+              {adaptivePrompt && (
+                <EvidenceQuestion question={adaptivePrompt} simulated />
+              )}
 
-          <div>
-            <Label htmlFor="ck-confidence">Confidence</Label>
-            <Select
-              id="ck-confidence"
-              value={confidence}
-              onChange={(e) => setConfidence(Number(e.target.value) as Confidence)}
-              className="bg-surface/80"
-            >
-              {[1, 2, 3, 4].map((n) => (
-                <option key={n} value={n}>
-                  {n} — {formatConfidence(n)}
-                </option>
-              ))}
-            </Select>
-          </div>
+              {!showEvidenceCapture ? (
+                <button
+                  type="button"
+                  onClick={() => setShowEvidenceCapture(true)}
+                  className="min-h-11 w-full border border-[hsl(var(--entrance-rule)/0.35)] bg-[hsl(var(--env-black)/0.35)] px-4 py-3 text-sm text-foreground/80 transition-colors hover:bg-[hsl(var(--env-black)/0.5)]"
+                >
+                  Gather supporting evidence
+                </button>
+              ) : (
+                <div className="rounded-sm border border-[hsl(var(--entrance-rule)/0.25)] bg-[hsl(var(--env-black)/0.35)] p-4">
+                  <FieldNoteCapture stopId="stop-cypress-knee" />
+                </div>
+              )}
 
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={handleSubmitTheory}
-            disabled={!mode || (mode !== "unsure" && !theory.trim())}
-          >
-            Record theory
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {adaptivePrompt && (
-            <div className="rounded-xl border border-accent/30 bg-accent/10 p-4">
-              <p className="text-sm font-medium">{adaptivePrompt}</p>
-              <p className="mt-1 text-xs text-muted">Deterministic adaptive follow-up · Simulated</p>
+              <ExpeditionAction
+                href="/learner/comparison"
+                label="Continue to Twenty Steps, Two Worlds"
+                className="w-full"
+              />
             </div>
           )}
-
-          {!showEvidenceCapture ? (
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() => setShowEvidenceCapture(true)}
-            >
-              Gather supporting evidence
-            </Button>
-          ) : (
-            <FieldNoteCapture stopId="stop-cypress-knee" />
-          )}
-
-          <Link href="/learner/comparison">
-            <Button size="lg" className="w-full">
-              Continue to Twenty Steps, Two Worlds
-              <ArrowRight className="ml-2 h-5 w-5" aria-hidden />
-            </Button>
-          </Link>
         </div>
-      )}
-    </article>
+      </div>
+    </EnvironmentalScene>
   );
 }

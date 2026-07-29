@@ -6,9 +6,10 @@ import { Button } from "@/components/shared/Button";
 import { getLearnerById } from "@/data/canonical";
 import { getNotesForLearner } from "@/store/demo-store";
 import type { Artifact, LearnerSession, SystemsMap } from "@/types";
-import { getMedia } from "@/data/first-landing-media";
+import { getMedia, focalToObjectPosition, type FirstLandingMediaKey } from "@/data/first-landing-media";
 import Image from "next/image";
-import { focalToObjectPosition } from "@/data/first-landing-media";
+import { AtlasCausalSystem } from "./AtlasCausalSystem";
+import { UnresolvedMarginNote } from "./UnresolvedMarginNote";
 
 type LivingAtlasPageProps = {
   learnerId: string;
@@ -17,6 +18,27 @@ type LivingAtlasPageProps = {
   systemsMap?: SystemsMap;
   onAddToAtlas?: () => void;
 };
+
+function resolveEvidenceMedia(notes: ReturnType<typeof getNotesForLearner>): {
+  media: ReturnType<typeof getMedia>;
+  caption: string;
+} {
+  const waterNote = notes.find((n) => n.stopId === "stop-water-fingerprints");
+  const cypressNote = notes.find((n) => n.stopId === "stop-cypress-knee");
+
+  if (cypressNote) {
+    return { media: getMedia("cypressKnees"), caption: cypressNote.observation };
+  }
+  if (waterNote) {
+    return { media: getMedia("waterFingerprint"), caption: waterNote.observation };
+  }
+
+  const key: FirstLandingMediaKey = "waterFingerprint";
+  return {
+    media: getMedia(key),
+    caption: notes[0]?.observation ?? "Field observation — learner capture",
+  };
+}
 
 export function LivingAtlasPage({
   learnerId,
@@ -27,129 +49,109 @@ export function LivingAtlasPage({
 }: LivingAtlasPageProps) {
   const learner = getLearnerById(learnerId)!;
   const notes = getNotesForLearner(learnerId);
-  const media = getMedia("shorelineTransfer");
+  const { media, caption } = resolveEvidenceMedia(notes);
+  const now = new Date();
+
+  const evidenceItems =
+    artifact.strongestEvidence.length > 0
+      ? artifact.strongestEvidence
+      : notes.map((n) => n.observation).slice(0, 3);
 
   return (
-    <article className="motion-atlas-unfold">
-      <div className="atlas-surface rounded-sm shadow-2xl">
-        {/* Atlas spread header */}
-        <header className="border-b border-parchment-ink/10 px-6 py-4 md:px-10 md:py-6">
-          <p className="text-xs uppercase tracking-[0.25em] opacity-60">
-            Virginia Beach Living Systems Atlas
+    <article className="motion-atlas-unfold px-4 py-6 sm:px-6 md:py-10">
+      <div className="atlas-spread mx-auto max-w-5xl overflow-hidden rounded-sm">
+        <header className="border-b border-[hsl(var(--parchment-ink)/0.08)] px-5 py-5 md:px-8 md:py-6">
+          <p className="text-[10px] uppercase tracking-[0.25em] opacity-55">
+            Virginia Beach / Living Atlas
           </p>
-          <h2 className="mt-2 font-serif text-3xl font-semibold">{artifact.title}</h2>
-          <p className="mt-1 text-sm opacity-70">
-            First Landing State Park · {new Date().toLocaleDateString()} ·{" "}
-            {new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+          <h2 className="mt-2 font-serif text-2xl font-semibold md:text-3xl">{artifact.title}</h2>
+          <p className="mt-2 text-sm opacity-70">
+            {learner.name} · First Landing State Park ·{" "}
+            {now.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })} ·{" "}
+            {now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
           </p>
         </header>
 
-        <div className="grid gap-6 px-6 py-6 md:grid-cols-2 md:px-10 md:py-8">
-          {/* Image panel */}
-          <figure className="relative aspect-[4/3] overflow-hidden rounded-sm">
-            <Image
-              src={media.src}
-              alt={notes[0]?.observation ?? media.alt}
-              fill
-              className="object-cover"
-              style={{ objectPosition: focalToObjectPosition(media.focal) }}
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-            <figcaption className="mt-2 text-xs italic opacity-70">
-              {notes[0]?.observation ?? "Field observation — learner capture"}
-            </figcaption>
-          </figure>
+        <div className="atlas-spread__seam h-px w-full" aria-hidden />
 
-          {/* Evidence columns */}
-          <div className="space-y-5 font-serif text-sm leading-relaxed">
-            <section>
-              <h3 className="mb-1 text-xs uppercase tracking-widest opacity-60">Original hypothesis</h3>
-              <p>{artifact.originalHypothesis || session.baselineExplanation}</p>
+        <div className="grid md:grid-cols-2">
+          {/* Left page — evidence */}
+          <div className="border-b border-[hsl(var(--parchment-ink)/0.06)] p-5 md:border-b-0 md:border-r md:p-8">
+            <figure className="relative">
+              <div className="atlas-tape absolute -top-2 left-1/2 z-10 h-5 w-16 -translate-x-1/2" aria-hidden />
+              <div className="relative aspect-[4/3] overflow-hidden bg-[hsl(var(--parchment-ink)/0.04)]">
+                <Image
+                  src={media.src}
+                  alt={caption}
+                  fill
+                  className="object-cover"
+                  style={{ objectPosition: focalToObjectPosition(media.focal) }}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
+              <figcaption className="mt-3 text-xs italic opacity-70">{caption}</figcaption>
+            </figure>
+
+            <section className="mt-6">
+              <h3 className="mb-1 text-[10px] uppercase tracking-[0.2em] opacity-55">Original theory</h3>
+              <p className="font-serif text-sm leading-relaxed">
+                {artifact.originalHypothesis || session.baselineExplanation || "—"}
+              </p>
             </section>
 
-            <section>
-              <h3 className="mb-1 text-xs uppercase tracking-widest opacity-60">Strongest evidence</h3>
-              <ul className="list-disc space-y-1 pl-4">
-                {(artifact.strongestEvidence.length > 0
-                  ? artifact.strongestEvidence
-                  : notes.map((n) => n.observation).slice(0, 3)
-                ).map((e, i) => (
+            <section className="mt-5">
+              <h3 className="mb-1 text-[10px] uppercase tracking-[0.2em] opacity-55">Evidence note</h3>
+              <ul className="list-disc space-y-1 pl-4 font-serif text-sm leading-relaxed">
+                {evidenceItems.map((e, i) => (
                   <li key={i}>{e}</li>
                 ))}
               </ul>
             </section>
 
-            <section>
-              <h3 className="mb-1 text-xs uppercase tracking-widest opacity-60">Revised explanation</h3>
-              <p>{artifact.revisedExplanation || session.revisedExplanation || session.exitClaim}</p>
+            <div className="mt-6 flex justify-end">
+              <span className="atlas-stamp">First Landing · Virginia Beach</span>
+            </div>
+          </div>
+
+          {/* Right page — systems */}
+          <div className="p-5 md:p-8">
+            <section className="mb-5">
+              <h3 className="mb-1 text-[10px] uppercase tracking-[0.2em] opacity-55">Revised explanation</h3>
+              <p className="font-serif text-lg leading-relaxed">
+                {artifact.revisedExplanation || session.revisedExplanation || session.exitClaim || "—"}
+              </p>
             </section>
+
+            {systemsMap && <AtlasCausalSystem systemsMap={systemsMap} className="mb-6" />}
+
+            <UnresolvedMarginNote
+              question={artifact.remainingQuestion || "What would you still need to observe?"}
+            />
+
+            <section className="mt-6">
+              <h3 className="mb-1 text-[10px] uppercase tracking-[0.2em] opacity-55">
+                Connection to another place
+              </h3>
+              <p className="text-sm">
+                Virginia Beach shoreline — where freshwater meets tidal influence
+              </p>
+            </section>
+
+            <p className="mt-4 text-xs opacity-55">
+              Identity pathway: {learner.identityPathways.join(" · ")}
+            </p>
           </div>
         </div>
-
-        {/* Systems diagram */}
-        {systemsMap && (
-          <section className="border-t border-parchment-ink/10 px-6 py-6 md:px-10">
-            <h3 className="mb-3 text-xs uppercase tracking-widest opacity-60">Systems map</h3>
-            <svg viewBox="0 0 100 60" className="h-40 w-full" role="img" aria-label="Learner systems diagram">
-              {systemsMap.edges.map((edge) => {
-                const src = systemsMap.nodes.find((n) => n.id === edge.source);
-                const tgt = systemsMap.nodes.find((n) => n.id === edge.target);
-                if (!src || !tgt) return null;
-                return (
-                  <line
-                    key={edge.id}
-                    x1={src.x}
-                    y1={src.y * 0.6}
-                    x2={tgt.x}
-                    y2={tgt.y * 0.6}
-                    stroke="hsl(157 28% 35%)"
-                    strokeWidth="0.6"
-                  />
-                );
-              })}
-              {systemsMap.nodes.map((node) => (
-                <text
-                  key={node.id}
-                  x={node.x}
-                  y={node.y * 0.6}
-                  textAnchor="middle"
-                  fill="hsl(205 24% 18%)"
-                  fontSize="3"
-                >
-                  {node.label}
-                </text>
-              ))}
-            </svg>
-          </section>
-        )}
-
-        <footer className="border-t border-parchment-ink/10 px-6 py-6 md:px-10">
-          <section className="mb-4">
-            <h3 className="mb-1 text-xs uppercase tracking-widest text-quiet-amber opacity-80">
-              Unresolved question
-            </h3>
-            <p className="font-serif italic">{artifact.remainingQuestion || "What would you still need to observe?"}</p>
-          </section>
-
-          <section className="mb-4">
-            <h3 className="mb-1 text-xs uppercase tracking-widest opacity-60">Connection to another place</h3>
-            <p className="text-sm">Virginia Beach shoreline — where freshwater meets tidal influence</p>
-          </section>
-
-          <p className="text-xs opacity-60">
-            Identity pathway: {learner.identityPathways.join(" · ")}
-          </p>
-        </footer>
       </div>
 
-      <div className="mt-8 text-center">
+      <div className="mx-auto mt-8 max-w-lg text-center">
         <p className="env-type-serif mb-6 text-xl leading-relaxed text-foreground">
           You did not finish a lesson.
           <br />
           You learned to read one part of the world.
         </p>
 
-        <Button size="lg" variant="parchment" className="w-full max-w-md" onClick={onAddToAtlas}>
+        <Button size="lg" variant="parchment" className="w-full" onClick={onAddToAtlas}>
           Add this page to my Virginia Beach Atlas
         </Button>
 

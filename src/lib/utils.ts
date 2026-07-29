@@ -10,6 +10,6 @@ export function generateId(prefix: string): string {
 }
 
 export function formatConfidence(level: number): string {
-  const labels = ["Very uncertain", "Somewhat uncertain", "Moderately confident", "Very confident"];
+  const labels = ["tentative", "leaning", "fairly sure", "strongly held"];
   return labels[level - 1] ?? "Unknown";
 }
