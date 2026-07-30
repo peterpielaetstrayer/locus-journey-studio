@@ -35,9 +35,12 @@ When documents conflict, use this priority:
 1. `docs/product/acceptance-criteria.md`
 2. `docs/product/journey-studio-spec.md`
 3. `docs/product/water-writes-the-landscape.md`
-4. `docs/product/owll-locus-learning-architecture-charter.md`
-5. `.cursor/rules/*.mdc`
-6. `AGENTS.md`
+4. `docs/product/locus-system-evolution-addendum-v0.2.md`
+5. `docs/product/owll-locus-learning-architecture-charter.md`
+6. `.cursor/rules/*.mdc`
+7. `AGENTS.md`
+
+The addendum governs broader LOCUS system evolution where the original charter or bootstrap assumptions have become too narrow. Journey-specific acceptance criteria and specifications continue to govern the current Virginia Beach vertical slice.
 
 Record unresolved conflicts in `docs/decisions/decision-log.md`. Do not silently invent a resolution.
 
@@ -53,7 +56,10 @@ Record unresolved conflicts in `docs/decisions/decision-log.md`. Do not silently
 - local deterministic adaptation engine
 - illustrated local map assets
 - Vercel deployment
-- no database or live AI dependency in v0.1
+
+## Current implementation note
+
+The repository has evolved beyond the original bootstrap assumptions and now includes optional Supabase authentication, persistence, versioned journeys, Field Notes, artifacts, interventions, reviews, and a Demo/Connected repository-adapter pattern. The canonical Journey Studio experience may continue to use deterministic intelligence while future private-alpha LOCUS Core workflows may use live AI under the system evolution addendum and decision log.
 
 ## Build philosophy
 
