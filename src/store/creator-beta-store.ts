@@ -7,6 +7,7 @@ import type {
   DraftJourneyProposal,
   Encounter,
   Evidence,
+  JourneyManifestV01,
   LearnerCapture,
 } from "@/types/creator-beta";
 
@@ -33,6 +34,7 @@ type CreatorBetaState = {
   lastCreatedJourneyId?: string;
 
   createJourneyFromProposal: (proposal: DraftJourneyProposal) => string;
+  importJourneyManifest: (manifest: JourneyManifestV01) => string;
   updateJourney: (journeyId: string, updates: Partial<CreatorJourney>) => void;
   updateEncounter: (encounterId: string, updates: Partial<Encounter>) => void;
   addEncounter: (journeyId: string) => string;
@@ -103,6 +105,26 @@ export const useCreatorBetaStore = create<CreatorBetaState>()(
         return journeyId;
       },
 
+      importJourneyManifest(manifest) {
+        const nextEncounters = Object.fromEntries(
+          manifest.encounters.map((encounter) => [encounter.id, encounter]),
+        );
+
+        set((state) => ({
+          journeys: {
+            ...state.journeys,
+            [manifest.journey.id]: manifest.journey,
+          },
+          encounters: {
+            ...state.encounters,
+            ...nextEncounters,
+          },
+          lastCreatedJourneyId: manifest.journey.id,
+        }));
+
+        return manifest.journey.id;
+      },
+
       updateJourney(journeyId, updates) {
         set((state) => {
           const journey = state.journeys[journeyId];
@@ -154,16 +176,20 @@ export const useCreatorBetaStore = create<CreatorBetaState>()(
           },
         };
 
-        set((state) => ({
-          journeys: {
-            ...state.journeys,
-            [journeyId]: {
-              ...state.journeys[journeyId],
-              encounterIds: [...state.journeys[journeyId].encounterIds, encounterId],
+        set((state) => {
+          const currentJourney = state.journeys[journeyId];
+          if (!currentJourney) return state;
+          return {
+            journeys: {
+              ...state.journeys,
+              [journeyId]: {
+                ...currentJourney,
+                encounterIds: [...currentJourney.encounterIds, encounterId],
+              },
             },
-          },
-          encounters: { ...state.encounters, [encounterId]: encounter },
-        }));
+            encounters: { ...state.encounters, [encounterId]: encounter },
+          };
+        });
 
         return encounterId;
       },
