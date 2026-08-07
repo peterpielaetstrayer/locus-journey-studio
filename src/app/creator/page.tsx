@@ -15,8 +15,9 @@ import { useCreatorBetaStore } from "@/store/creator-beta-store";
 const FIRST_LANDING_CONNECTED_ID = "00000000-0000-4000-8000-000000000010";
 
 export default function CreatorLibraryPage() {
-  const localJourneys = useCreatorBetaStore((state) => Object.values(state.journeys));
+  const journeysById = useCreatorBetaStore((state) => state.journeys);
   const connectedIds = useCreatorBetaStore((state) => state.connectedJourneyIds);
+  const localJourneys = useMemo(() => Object.values(journeysById), [journeysById]);
   const [connectedJourneys, setConnectedJourneys] = useState<CreatorBetaJourneySummary[]>([]);
   const [connectedLoaded, setConnectedLoaded] = useState(false);
   const clientMode = getClientPersistenceMode();
