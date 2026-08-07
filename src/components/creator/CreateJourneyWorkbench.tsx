@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createJourneyWithPersistence } from "@/hooks/useCreatorBetaSync";
 import { prototypeJourneyProposalEngine } from "@/lib/creator-beta/proposal-engine";
-import { useCreatorBetaStore } from "@/store/creator-beta-store";
 import type { DraftJourneyProposal } from "@/types/creator-beta";
 
 const fieldClass =
@@ -11,13 +11,12 @@ const fieldClass =
 
 export function CreateJourneyWorkbench() {
   const router = useRouter();
-  const createJourneyFromProposal = useCreatorBetaStore(
-    (state) => state.createJourneyFromProposal,
-  );
   const [seed, setSeed] = useState("");
   const [proposal, setProposal] = useState<DraftJourneyProposal | null>(null);
   const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createMode, setCreateMode] = useState<"local" | "connected" | null>(null);
 
   async function generateProposal() {
     const value = seed.trim();
@@ -37,10 +36,19 @@ export function CreateJourneyWorkbench() {
     }
   }
 
-  function createDraft() {
+  async function createDraft() {
     if (!proposal) return;
-    const journeyId = createJourneyFromProposal(proposal);
-    router.push(`/creator/beta/${journeyId}`);
+    setCreating(true);
+    setError(null);
+    try {
+      const { journeyId, mode } = await createJourneyWithPersistence(proposal);
+      setCreateMode(mode);
+      router.push(`/creator/beta/${journeyId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create Journey draft.");
+    } finally {
+      setCreating(false);
+    }
   }
 
   function updateEncounter(
@@ -247,11 +255,17 @@ export function CreateJourneyWorkbench() {
           <div className="flex flex-wrap gap-3 border-t border-border pt-5">
             <button
               type="button"
-              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
               onClick={createDraft}
+              disabled={creating}
             >
-              Create editable Journey draft
+              {creating ? "Creating draft…" : "Create editable Journey draft"}
             </button>
+            {createMode ? (
+              <p className="text-xs text-muted">
+                Last create used {createMode === "connected" ? "connected" : "local browser"} persistence.
+              </p>
+            ) : null}
             <button
               type="button"
               className="rounded-lg border border-border px-5 py-2.5 text-sm font-medium"

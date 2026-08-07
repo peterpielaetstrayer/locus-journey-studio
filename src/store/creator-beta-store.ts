@@ -10,6 +10,8 @@ import type {
   JourneyManifestV01,
   LearnerCapture,
 } from "@/types/creator-beta";
+import type { CreatorBetaJourneyRecord } from "@/lib/repositories/creator-beta-types";
+import type { CreatorBetaPersistenceMode } from "@/lib/creator-beta/persistence-client";
 
 function makeId(prefix: string): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -32,7 +34,13 @@ type CreatorBetaState = {
   captures: LearnerCapture[];
   evidence: Evidence[];
   lastCreatedJourneyId?: string;
+  connectedJourneyIds: string[];
+  persistenceMode: CreatorBetaPersistenceMode;
 
+  hydrateFromRecord: (record: CreatorBetaJourneyRecord) => void;
+  setPersistenceMode: (mode: CreatorBetaPersistenceMode) => void;
+  markConnectedJourney: (journeyId: string) => void;
+  isConnectedJourney: (journeyId: string) => boolean;
   createJourneyFromProposal: (proposal: DraftJourneyProposal) => string;
   importJourneyManifest: (manifest: JourneyManifestV01) => string;
   updateJourney: (journeyId: string, updates: Partial<CreatorJourney>) => void;
@@ -52,6 +60,39 @@ export const useCreatorBetaStore = create<CreatorBetaState>()(
       encounters: {},
       captures: [],
       evidence: [],
+      connectedJourneyIds: [],
+      persistenceMode: "local",
+
+      hydrateFromRecord(record) {
+        const nextEncounters = Object.fromEntries(
+          record.encounters.map((encounter) => [encounter.id, encounter]),
+        );
+        set((state) => ({
+          journeys: { ...state.journeys, [record.journey.id]: record.journey },
+          encounters: { ...state.encounters, ...nextEncounters },
+          connectedJourneyIds: state.connectedJourneyIds.includes(record.journey.id)
+            ? state.connectedJourneyIds
+            : [...state.connectedJourneyIds, record.journey.id],
+          persistenceMode: "connected",
+        }));
+      },
+
+      setPersistenceMode(mode) {
+        set({ persistenceMode: mode });
+      },
+
+      markConnectedJourney(journeyId) {
+        set((state) => ({
+          connectedJourneyIds: state.connectedJourneyIds.includes(journeyId)
+            ? state.connectedJourneyIds
+            : [...state.connectedJourneyIds, journeyId],
+          persistenceMode: "connected",
+        }));
+      },
+
+      isConnectedJourney(journeyId) {
+        return get().connectedJourneyIds.includes(journeyId);
+      },
 
       createJourneyFromProposal(proposal) {
         const journeyId = makeId("journey");
@@ -266,6 +307,8 @@ export const useCreatorBetaStore = create<CreatorBetaState>()(
         captures: state.captures,
         evidence: state.evidence,
         lastCreatedJourneyId: state.lastCreatedJourneyId,
+        connectedJourneyIds: state.connectedJourneyIds,
+        persistenceMode: state.persistenceMode,
       }),
     },
   ),

@@ -2,17 +2,50 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useCreatorBetaSync } from "@/hooks/useCreatorBetaSync";
 import { useCreatorBetaStore } from "@/store/creator-beta-store";
 
 const fieldClass =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary";
+
+function PersistenceBadge({
+  mode,
+  lastSavedAt,
+  syncError,
+}: {
+  mode: "local" | "connected";
+  lastSavedAt: string | null;
+  syncError: string | null;
+}) {
+  return (
+    <div className="text-xs text-muted">
+      <span
+        className={`rounded-full border px-2 py-0.5 ${
+          mode === "connected" ? "border-accent/40 text-accent" : "border-border"
+        }`}
+      >
+        {mode === "connected" ? "Connected persistence" : "Local browser draft"}
+      </span>
+      {lastSavedAt ? <span className="ml-2">Saved {new Date(lastSavedAt).toLocaleTimeString()}</span> : null}
+      {syncError ? <p className="mt-1 text-danger">{syncError}</p> : null}
+    </div>
+  );
+}
 
 export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) {
   const journey = useCreatorBetaStore((state) => state.journeys[journeyId]);
   const allEncounters = useCreatorBetaStore((state) => state.encounters);
   const updateJourney = useCreatorBetaStore((state) => state.updateJourney);
   const updateEncounter = useCreatorBetaStore((state) => state.updateEncounter);
-  const addEncounter = useCreatorBetaStore((state) => state.addEncounter);
+  const {
+    loading,
+    syncError,
+    lastSavedAt,
+    persistenceMode,
+    queueJourneySave,
+    queueEncounterSave,
+    addConnectedEncounter,
+  } = useCreatorBetaSync(journeyId);
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null);
 
   const encounters = useMemo(
@@ -35,10 +68,18 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
     ? allEncounters[selectedEncounterId]
     : undefined;
 
+  if (loading && !journey) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-12">
+        <p className="text-muted">Loading Journey from connected storage…</p>
+      </div>
+    );
+  }
+
   if (!journey) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-12">
-        <p className="text-muted">Loading saved Journey draft…</p>
+        <p className="text-muted">Journey not found or unavailable in this browser.</p>
         <Link href="/creator" className="mt-4 inline-block text-sm text-primary hover:underline">
           Return to My Journeys
         </Link>
@@ -46,8 +87,18 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
     );
   }
 
-  function createEncounter() {
-    const encounterId = addEncounter(journeyId);
+  function patchJourney(updates: Parameters<typeof updateJourney>[1]) {
+    updateJourney(journeyId, updates);
+    queueJourneySave(updates);
+  }
+
+  function patchEncounter(encounterId: string, updates: Parameters<typeof updateEncounter>[1]) {
+    updateEncounter(encounterId, updates);
+    queueEncounterSave(encounterId, updates);
+  }
+
+  async function createEncounter() {
+    const encounterId = await addConnectedEncounter();
     setSelectedEncounterId(encounterId);
   }
 
@@ -57,7 +108,12 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
         <Link href="/creator" className="text-sm text-muted hover:text-foreground">
           ← My Journeys
         </Link>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <PersistenceBadge
+            mode={persistenceMode}
+            lastSavedAt={lastSavedAt}
+            syncError={syncError}
+          />
           <span className="rounded-full border border-border px-3 py-1 text-xs uppercase tracking-wide text-muted">
             {journey.status}
           </span>
@@ -76,10 +132,13 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
           className="mt-2 w-full border-0 bg-transparent p-0 text-3xl font-semibold outline-none"
           value={journey.title}
           aria-label="Journey title"
-          onChange={(event) => updateJourney(journeyId, { title: event.target.value })}
+          onChange={(event) => patchJourney({ title: event.target.value })}
         />
         <p className="mt-2 text-sm text-muted">
-          Structured underneath as Journey → Encounters. Changes save to this browser automatically.
+          Structured underneath as Journey → Encounters.
+          {persistenceMode === "connected"
+            ? " Edits sync to the connected repository when you are signed in."
+            : " Changes save to this browser only until Supabase is configured and you sign in."}
         </p>
       </header>
 
@@ -93,7 +152,7 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
                 className={`${fieldClass} mt-2 normal-case tracking-normal text-foreground`}
                 value={journey.thread.statement}
                 onChange={(event) =>
-                  updateJourney(journeyId, {
+                  patchJourney({
                     thread: { ...journey.thread, statement: event.target.value },
                   })
                 }
@@ -106,7 +165,7 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
                 className={`${fieldClass} mt-2 normal-case tracking-normal text-foreground`}
                 value={journey.learnerContext.description}
                 onChange={(event) =>
-                  updateJourney(journeyId, {
+                  patchJourney({
                     learnerContext: { description: event.target.value },
                   })
                 }
@@ -180,7 +239,7 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
                     className={`${fieldClass} mt-2`}
                     value={selectedEncounter.title}
                     onChange={(event) =>
-                      updateEncounter(selectedEncounter.id, { title: event.target.value })
+                      patchEncounter(selectedEncounter.id, { title: event.target.value })
                     }
                   />
                 </label>
@@ -190,7 +249,7 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
                     className={`${fieldClass} mt-2`}
                     value={selectedEncounter.target.label}
                     onChange={(event) =>
-                      updateEncounter(selectedEncounter.id, {
+                      patchEncounter(selectedEncounter.id, {
                         target: { ...selectedEncounter.target, label: event.target.value },
                       })
                     }
@@ -206,7 +265,7 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
                   placeholder="Why does this Encounter matter? What do you want learners to notice before explanation?"
                   value={selectedEncounter.creatorIntent ?? ""}
                   onChange={(event) =>
-                    updateEncounter(selectedEncounter.id, {
+                    patchEncounter(selectedEncounter.id, {
                       creatorIntent: event.target.value,
                     })
                   }
@@ -221,7 +280,7 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
                     className={`${fieldClass} mt-2 normal-case tracking-normal text-foreground`}
                     value={selectedEncounter.learnerPrompt}
                     onChange={(event) =>
-                      updateEncounter(selectedEncounter.id, {
+                      patchEncounter(selectedEncounter.id, {
                         learnerPrompt: event.target.value,
                       })
                     }
@@ -234,7 +293,7 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
                     className={`${fieldClass} mt-2 normal-case tracking-normal text-foreground`}
                     value={selectedEncounter.learnerAction}
                     onChange={(event) =>
-                      updateEncounter(selectedEncounter.id, {
+                      patchEncounter(selectedEncounter.id, {
                         learnerAction: event.target.value,
                       })
                     }
@@ -247,7 +306,7 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
                     className={`${fieldClass} mt-2 normal-case tracking-normal text-foreground`}
                     value={selectedEncounter.evidenceRequest.prompt}
                     onChange={(event) =>
-                      updateEncounter(selectedEncounter.id, {
+                      patchEncounter(selectedEncounter.id, {
                         evidenceRequest: {
                           ...selectedEncounter.evidenceRequest,
                           prompt: event.target.value,
