@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FUTURE_JOURNEYS, WATER_WRITES_JOURNEY } from "@/data/canonical";
 import { Card, CardDescription, CardTitle } from "@/components/shared/Card";
+import { ImportFirstLandingButton } from "@/components/creator/ImportFirstLandingButton";
 import { useCreatorBetaStore } from "@/store/creator-beta-store";
 
 export default function CreatorLibraryPage() {
@@ -68,14 +69,23 @@ export default function CreatorLibraryPage() {
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Link href="/creator/journey/water-writes-the-landscape">
-            <Card className="h-full border-accent/40 transition-colors hover:border-accent">
-              <span className="text-xs uppercase text-accent">Legacy field-test draft</span>
-              <CardTitle className="mt-1">{WATER_WRITES_JOURNEY.title}</CardTitle>
-              <CardDescription>{WATER_WRITES_JOURNEY.location}</CardDescription>
-              <p className="mt-4 text-xs text-muted">Preserved First Landing reference journey</p>
-            </Card>
-          </Link>
+          <Card className="h-full border-accent/40">
+            <span className="text-xs uppercase text-accent">First Landing reference journey</span>
+            <CardTitle className="mt-1">{WATER_WRITES_JOURNEY.title}</CardTitle>
+            <CardDescription>{WATER_WRITES_JOURNEY.location}</CardDescription>
+            <p className="mt-4 text-xs text-muted">
+              The same canonical content can now be adapted into the generic Creator Beta Journey / Encounter model.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <ImportFirstLandingButton />
+              <Link
+                href="/creator/journey/water-writes-the-landscape"
+                className="rounded-lg border border-border px-3 py-2 text-xs font-medium"
+              >
+                View legacy prototype
+              </Link>
+            </div>
+          </Card>
 
           {FUTURE_JOURNEYS.map((journey) => (
             <Card key={journey.id} className="opacity-55">
