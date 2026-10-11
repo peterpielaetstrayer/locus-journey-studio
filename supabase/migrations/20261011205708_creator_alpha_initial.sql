@@ -215,6 +215,7 @@ TO authenticated USING (
 CREATE POLICY journeys_insert_owner ON public.journeys FOR INSERT
 TO authenticated WITH CHECK (
   created_by = (SELECT auth.uid())
+  AND current_published_version_id IS NULL
   AND private.has_creator_role(organization_id)
 );
 CREATE POLICY journeys_update_owner ON public.journeys FOR UPDATE
@@ -223,6 +224,7 @@ TO authenticated USING (
   AND private.has_creator_role(organization_id)
 ) WITH CHECK (
   created_by = (SELECT auth.uid())
+  AND current_published_version_id IS NULL
   AND private.has_creator_role(organization_id)
 );
 
@@ -251,6 +253,7 @@ TO authenticated USING (
   )
 ) WITH CHECK (
   status IN ('concept', 'draft', 'field_test', 'private_adult_walk')
+  AND created_by = (SELECT auth.uid())
   AND EXISTS (
     SELECT 1 FROM public.journeys j
     WHERE j.id = journey_id AND j.created_by = (SELECT auth.uid())
