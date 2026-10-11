@@ -102,7 +102,7 @@ export function useCreatorBetaSync(journeyId: string) {
     }
     const encounter = await createConnectedEncounter(journeyId);
     if (!encounter) {
-      return useCreatorBetaStore.getState().addEncounter(journeyId);
+      throw new Error("Connected Encounter creation was not confirmed. No local fallback was created.");
     }
     useCreatorBetaStore.setState((state) => {
       const currentJourney = state.journeys[journeyId];
@@ -138,15 +138,12 @@ export async function createJourneyWithPersistence(
 ): Promise<{ journeyId: string; mode: "local" | "connected" }> {
   const clientMode = getClientPersistenceMode();
   if (clientMode === "connected") {
-    try {
-      const record = await createConnectedJourney(proposal);
-      if (record) {
-        useCreatorBetaStore.getState().hydrateFromRecord(record);
-        return { journeyId: record.journey.id, mode: "connected" };
-      }
-    } catch {
-      // Fall through to local when auth or network fails.
+    const record = await createConnectedJourney(proposal);
+    if (!record) {
+      throw new Error("Connected Journey creation was not confirmed. No local draft was created.");
     }
+    useCreatorBetaStore.getState().hydrateFromRecord(record);
+    return { journeyId: record.journey.id, mode: "connected" };
   }
 
   const journeyId = useCreatorBetaStore.getState().createJourneyFromProposal(proposal);

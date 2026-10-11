@@ -29,27 +29,19 @@ export async function fetchConnectedJourneys(): Promise<{
   if (!isSupabaseConfigured()) {
     return { journeys: [], mode: "local" };
   }
-  try {
-    const data = await parseJson<{ journeys: CreatorBetaJourneySummary[]; mode: "connected" }>(
-      await fetch("/api/creator/beta/journeys"),
-    );
-    return { journeys: data.journeys, mode: "connected" };
-  } catch {
-    return { journeys: [], mode: "local" };
-  }
+  const data = await parseJson<{ journeys: CreatorBetaJourneySummary[]; mode: "connected" }>(
+    await fetch("/api/creator/beta/journeys", { cache: "no-store" }),
+  );
+  return { journeys: data.journeys, mode: "connected" };
 }
 
 export async function fetchConnectedJourney(
   journeyId: string,
 ): Promise<CreatorBetaJourneyRecord | null> {
   if (!isSupabaseConfigured()) return null;
-  try {
-    return await parseJson<CreatorBetaJourneyRecord>(
-      await fetch(`/api/creator/beta/journeys/${journeyId}`),
-    );
-  } catch {
-    return null;
-  }
+  return parseJson<CreatorBetaJourneyRecord>(
+    await fetch(`/api/creator/beta/journeys/${journeyId}`, { cache: "no-store" }),
+  );
 }
 
 export async function createConnectedJourney(

@@ -12,14 +12,13 @@ import {
 import type { CreatorBetaJourneySummary } from "@/lib/repositories/creator-beta-types";
 import { useCreatorBetaStore } from "@/store/creator-beta-store";
 
-const FIRST_LANDING_CONNECTED_ID = "00000000-0000-4000-8000-000000000010";
-
 export default function CreatorLibraryPage() {
   const journeysById = useCreatorBetaStore((state) => state.journeys);
   const connectedIds = useCreatorBetaStore((state) => state.connectedJourneyIds);
   const localJourneys = useMemo(() => Object.values(journeysById), [journeysById]);
   const [connectedJourneys, setConnectedJourneys] = useState<CreatorBetaJourneySummary[]>([]);
   const [connectedLoaded, setConnectedLoaded] = useState(false);
+  const [connectedError, setConnectedError] = useState<string | null>(null);
   const clientMode = getClientPersistenceMode();
 
   useEffect(() => {
@@ -27,9 +26,22 @@ export default function CreatorLibraryPage() {
       setConnectedLoaded(true);
       return;
     }
+    let active = true;
     fetchConnectedJourneys()
-      .then(({ journeys }) => setConnectedJourneys(journeys))
-      .finally(() => setConnectedLoaded(true));
+      .then(({ journeys }) => {
+        if (!active) return;
+        setConnectedJourneys(journeys);
+        setConnectedError(null);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setConnectedJourneys([]);
+        setConnectedError(error instanceof Error ? error.message : "Could not load connected Journeys.");
+      })
+      .finally(() => {
+        if (active) setConnectedLoaded(true);
+      });
+    return () => { active = false; };
   }, [clientMode]);
 
   const localOnlyJourneys = useMemo(
@@ -37,20 +49,14 @@ export default function CreatorLibraryPage() {
     [connectedIds, localJourneys],
   );
 
-  const connectedSummaries = useMemo(() => {
-    const fromApi = connectedJourneys;
-    const apiIds = new Set(fromApi.map((journey) => journey.id));
-    const fromLocalConnected = localJourneys
-      .filter((journey) => connectedIds.includes(journey.id) && !apiIds.has(journey.id))
-      .map((journey) => ({
-        id: journey.id,
-        slug: journey.id,
-        title: journey.title,
-        status: journey.status,
-        encounterCount: journey.encounterIds.length,
-        threadStatement: journey.thread.statement,
-      }));
-    return [...fromApi, ...fromLocalConnected];
+  // Only records returned by the connected API are confirmed cloud Journeys.
+  // A locally cached connected ID is never proof that the remote record exists.
+  const connectedSummaries = connectedJourneys;
+  const unverifiedCachedJourneys = useMemo(() => {
+    const confirmedIds = new Set(connectedJourneys.map((item) => item.id));
+    return localJourneys.filter((item) =>
+      connectedIds.includes(item.id) && !confirmedIds.has(item.id),
+    );
   }, [connectedIds, connectedJourneys, localJourneys]);
 
   return (
@@ -70,6 +76,12 @@ export default function CreatorLibraryPage() {
           + Create Journey
         </Link>
       </div>
+
+      {clientMode === "connected" && connectedError ? (
+        <div role="alert" className="mb-6 rounded-xl border border-danger/40 p-4 text-sm text-danger">
+          Cannot verify connected Journeys: {connectedError}. Cached browser copies are not confirmation of a cloud save.
+        </div>
+      ) : null}
 
       {clientMode === "connected" && connectedLoaded && connectedSummaries.length > 0 ? (
         <section className="mb-10" aria-labelledby="connected-journeys-heading">
@@ -103,6 +115,27 @@ export default function CreatorLibraryPage() {
         </section>
       ) : null}
 
+      {clientMode === "connected" && connectedLoaded && unverifiedCachedJourneys.length > 0 ? (
+        <section className="mb-10 rounded-xl border border-accent/40 p-4" aria-labelledby="cached-journeys">
+          <h2 id="cached-journeys" className="font-semibold">
+            Browser copies not confirmed in Supabase
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            These Journeys exist in this browser but were not verified in the connected account.
+            Do not assume they have synchronized. Open a copy only to review or export it.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {unverifiedCachedJourneys.map((journey) => (
+              <li key={journey.id}>
+                <Link href={`/creator/beta/${journey.id}`} className="text-sm text-primary underline">
+                  {journey.title} (unverified local copy)
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {localOnlyJourneys.length > 0 ? (
         <section className="mb-10" aria-labelledby="beta-journeys-heading">
           <div className="mb-4 flex items-center justify-between gap-4">
@@ -110,7 +143,7 @@ export default function CreatorLibraryPage() {
               <h2 id="beta-journeys-heading" className="text-lg font-semibold">Local browser drafts</h2>
               <p className="text-sm text-muted">
                 {clientMode === "connected"
-                  ? "Prototype fallback when not signed in or before connected save."
+                  ? "Local drafts are separate from connected Journeys. They are not automatically synchronized."
                   : "Saved locally until Supabase credentials and sign-in are available."}
               </p>
             </div>
@@ -158,18 +191,10 @@ export default function CreatorLibraryPage() {
             <CardTitle className="mt-1">{WATER_WRITES_JOURNEY.title}</CardTitle>
             <CardDescription>{WATER_WRITES_JOURNEY.location}</CardDescription>
             <p className="mt-4 text-xs text-muted">
-              Open through the legacy manifest locally, or through connected storage when signed in.
+              This legacy reference is a local demonstration, not a connected creator draft.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <ImportFirstLandingButton />
-              {clientMode === "connected" ? (
-                <Link
-                  href={`/creator/beta/${FIRST_LANDING_CONNECTED_ID}`}
-                  className="rounded-lg border border-accent/40 px-3 py-2 text-xs font-medium text-accent"
-                >
-                  Open connected reference
-                </Link>
-              ) : null}
               <Link
                 href="/creator/journey/water-writes-the-landscape"
                 className="rounded-lg border border-border px-3 py-2 text-xs font-medium"

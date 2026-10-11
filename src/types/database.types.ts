@@ -4,482 +4,389 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[];
+  | Json[]
 
 export type Database = {
   public: {
     Tables: {
-      organizations: {
-        Row: {
-          id: string;
-          name: string;
-          slug: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          slug: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["organizations"]["Insert"]>;
-        Relationships: [];
-      };
-      profiles: {
-        Row: {
-          id: string;
-          display_name: string;
-          email: string;
-          avatar_path: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id: string;
-          display_name: string;
-          email: string;
-          avatar_path?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
-        Relationships: [];
-      };
-      organization_memberships: {
-        Row: {
-          id: string;
-          organization_id: string;
-          profile_id: string;
-          role: "owner" | "creator" | "orchestrator" | "reviewer" | "admin";
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          organization_id: string;
-          profile_id: string;
-          role: "owner" | "creator" | "orchestrator" | "reviewer" | "admin";
-          created_at?: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["organization_memberships"]["Insert"]>;
-        Relationships: [];
-      };
-      learner_profiles: {
-        Row: {
-          id: string;
-          organization_id: string;
-          display_name: string;
-          age_band: string;
-          interests: string[];
-          strengths: string[];
-          growth_areas: string[];
-          preferred_capture_modes: string[];
-          accessibility_preferences: string[];
-          identity_pathways: string[];
-          adaptation_profile: "curious" | "movement" | "structured";
-          is_demo: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["learner_profiles"]["Row"]> & {
-          organization_id: string;
-          display_name: string;
-          age_band: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["learner_profiles"]["Insert"]>;
-        Relationships: [];
-      };
-      journeys: {
-        Row: {
-          id: string;
-          organization_id: string;
-          slug: string;
-          title: string;
-          region: string;
-          location: string;
-          created_by: string | null;
-          current_published_version_id: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["journeys"]["Row"]> & {
-          organization_id: string;
-          slug: string;
-          title: string;
-          region: string;
-          location: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["journeys"]["Insert"]>;
-        Relationships: [];
-      };
-      journey_versions: {
-        Row: {
-          id: string;
-          journey_id: string;
-          version_label: string;
-          status:
-            | "concept"
-            | "draft"
-            | "field_test"
-            | "private_adult_walk"
-            | "learner_pilot"
-            | "published"
-            | "archived";
-          central_question: string;
-          subtitle: string;
-          description: string;
-          audience: string;
-          duration_minutes: number;
-          learning_domains: string[];
-          enduring_understandings: string[];
-          prerequisite_concepts: string[];
-          artifact_template: Json;
-          created_by: string | null;
-          created_at: string;
-          published_at: string | null;
-          supersedes_version_id: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["journey_versions"]["Row"]> & {
-          journey_id: string;
-          version_label: string;
-          central_question: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["journey_versions"]["Insert"]>;
-        Relationships: [];
-      };
-      journey_stops: {
-        Row: {
-          id: string;
-          journey_version_id: string;
-          position: number;
-          slug: string;
-          title: string;
-          location_label: string;
-          purpose: string;
-          central_concept: string;
-          learning_objective: string;
-          opening_prompt: string;
-          field_action: string;
-          evidence_requirements: Json;
-          mentor_interventions: Json;
-          safety_notes: string[];
-          accessibility_alternatives: string[];
-          artifact_contribution: string | null;
-          resurfacing_connection: string | null;
-          is_optional: boolean;
-          is_hidden_until_unlocked: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["journey_stops"]["Row"]> & {
-          journey_version_id: string;
-          position: number;
-          slug: string;
-          title: string;
-          location_label: string;
-          purpose: string;
-          central_concept: string;
-          learning_objective: string;
-          opening_prompt: string;
-          field_action: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["journey_stops"]["Insert"]>;
-        Relationships: [];
-      };
-      adaptive_branches: {
-        Row: {
-          id: string;
-          journey_stop_id: string;
-          name: string;
-          learner_type: string;
-          activation_type: string;
-          trigger_description: string;
-          prompt: string;
-          action: string;
-          evidence_expectation: string;
-          return_to_core: boolean;
-          created_by: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["adaptive_branches"]["Row"]> & {
-          journey_stop_id: string;
-          name: string;
-          learner_type: string;
-          activation_type: string;
-          trigger_description: string;
-          prompt: string;
-          action: string;
-          evidence_expectation: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["adaptive_branches"]["Insert"]>;
-        Relationships: [];
-      };
-      field_notes: {
-        Row: {
-          id: string;
-          journey_enrollment_id: string;
-          journey_stop_id: string;
-          learner_profile_id: string;
-          created_by_profile_id: string | null;
-          capture_type: string;
-          media_asset_id: string | null;
-          observation: string;
-          inference: string | null;
-          hypothesis: string | null;
-          evidence: Json;
-          alternative_explanation: string | null;
-          confidence: number;
-          question: string | null;
-          visibility: "private" | "mentor" | "artifact";
-          mentor_reviewed: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["field_notes"]["Row"]> & {
-          journey_enrollment_id: string;
-          journey_stop_id: string;
-          learner_profile_id: string;
-          capture_type: string;
-          observation: string;
-          confidence: number;
-        };
-        Update: Partial<Database["public"]["Tables"]["field_notes"]["Insert"]>;
-        Relationships: [];
-      };
-      mentor_interventions: {
-        Row: {
-          id: string;
-          journey_enrollment_id: string;
-          journey_stop_id: string | null;
-          learner_profile_id: string;
-          created_by_profile_id: string | null;
-          category: string;
-          recommendation_source: string;
-          reason: string;
-          message: string;
-          status: string;
-          override_reason: string | null;
-          delivered_at: string | null;
-          learner_response: string | null;
-          outcome: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["mentor_interventions"]["Row"]> & {
-          journey_enrollment_id: string;
-          learner_profile_id: string;
-          category: string;
-          recommendation_source: string;
-          reason: string;
-          message: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["mentor_interventions"]["Insert"]>;
-        Relationships: [];
-      };
-      artifacts: {
-        Row: {
-          id: string;
-          journey_enrollment_id: string;
-          learner_profile_id: string;
-          journey_version_id: string;
-          title: string;
-          selected_media_asset_id: string | null;
-          original_hypothesis: string;
-          strongest_evidence: Json;
-          revised_explanation: string;
-          systems_map: Json;
-          remaining_question: string;
-          status: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["artifacts"]["Row"]> & {
-          journey_enrollment_id: string;
-          learner_profile_id: string;
-          journey_version_id: string;
-          title: string;
-          original_hypothesis: string;
-          revised_explanation: string;
-          remaining_question: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["artifacts"]["Insert"]>;
-        Relationships: [];
-      };
-      journey_reviews: {
-        Row: {
-          id: string;
-          journey_version_id: string;
-          reviewer_profile_id: string;
-          category:
-            | "learning_design"
-            | "factual"
-            | "sources"
-            | "safety"
-            | "accessibility"
-            | "field_test"
-            | "maintenance";
-          status: string;
-          notes: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["journey_reviews"]["Row"]> & {
-          journey_version_id: string;
-          reviewer_profile_id: string;
-          category: Database["public"]["Tables"]["journey_reviews"]["Row"]["category"];
-          status: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["journey_reviews"]["Insert"]>;
-        Relationships: [];
-      };
       audit_events: {
         Row: {
-          id: string;
-          organization_id: string;
-          actor_profile_id: string | null;
-          entity_type: string;
-          entity_id: string;
-          action: string;
-          metadata: Json;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["audit_events"]["Row"]> & {
-          organization_id: string;
-          entity_type: string;
-          entity_id: string;
-          action: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["audit_events"]["Insert"]>;
-        Relationships: [];
-      };
-      media_assets: {
+          action: string
+          actor_profile_id: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json
+          organization_id: string
+        }
+        Insert: {
+          action: string
+          actor_profile_id?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+        }
+        Update: {
+          action?: string
+          actor_profile_id?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_events_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_stops: {
         Row: {
-          id: string;
-          organization_id: string;
-          owner_profile_id: string;
-          journey_enrollment_id: string | null;
-          bucket: string;
-          object_path: string;
-          mime_type: string;
-          size_bytes: number;
-          alt_text: string;
-          visibility: "private" | "mentor" | "artifact" | "organization";
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["media_assets"]["Row"]> & {
-          organization_id: string;
-          owner_profile_id: string;
-          bucket: string;
-          object_path: string;
-          mime_type: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["media_assets"]["Insert"]>;
-        Relationships: [];
-      };
-      cohorts: {
+          accessibility_alternatives: string[]
+          artifact_contribution: string | null
+          central_concept: string
+          created_at: string
+          evidence_requirements: Json
+          field_action: string
+          id: string
+          is_hidden_until_unlocked: boolean
+          is_optional: boolean
+          journey_version_id: string
+          learning_objective: string
+          location_label: string
+          mentor_interventions: Json
+          opening_prompt: string
+          position: number
+          purpose: string
+          resurfacing_connection: string | null
+          safety_notes: string[]
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          accessibility_alternatives?: string[]
+          artifact_contribution?: string | null
+          central_concept: string
+          created_at?: string
+          evidence_requirements?: Json
+          field_action: string
+          id?: string
+          is_hidden_until_unlocked?: boolean
+          is_optional?: boolean
+          journey_version_id: string
+          learning_objective: string
+          location_label: string
+          mentor_interventions?: Json
+          opening_prompt: string
+          position: number
+          purpose: string
+          resurfacing_connection?: string | null
+          safety_notes?: string[]
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          accessibility_alternatives?: string[]
+          artifact_contribution?: string | null
+          central_concept?: string
+          created_at?: string
+          evidence_requirements?: Json
+          field_action?: string
+          id?: string
+          is_hidden_until_unlocked?: boolean
+          is_optional?: boolean
+          journey_version_id?: string
+          learning_objective?: string
+          location_label?: string
+          mentor_interventions?: Json
+          opening_prompt?: string
+          position?: number
+          purpose?: string
+          resurfacing_connection?: string | null
+          safety_notes?: string[]
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_stops_journey_version_id_fkey"
+            columns: ["journey_version_id"]
+            isOneToOne: false
+            referencedRelation: "journey_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_versions: {
         Row: {
-          id: string;
-          organization_id: string;
-          journey_version_id: string;
-          name: string;
-          status: string;
-          starts_at: string | null;
-          ends_at: string | null;
-          created_by: string | null;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["cohorts"]["Row"]> & {
-          organization_id: string;
-          journey_version_id: string;
-          name: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["cohorts"]["Insert"]>;
-        Relationships: [];
-      };
-      cohort_memberships: {
+          artifact_template: Json
+          audience: string
+          central_question: string
+          created_at: string
+          created_by: string | null
+          description: string
+          duration_minutes: number
+          enduring_understandings: string[]
+          id: string
+          journey_id: string
+          learning_domains: string[]
+          prerequisite_concepts: string[]
+          published_at: string | null
+          status: Database["public"]["Enums"]["journey_version_status"]
+          subtitle: string
+          supersedes_version_id: string | null
+          version_label: string
+        }
+        Insert: {
+          artifact_template?: Json
+          audience?: string
+          central_question: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          duration_minutes?: number
+          enduring_understandings?: string[]
+          id?: string
+          journey_id: string
+          learning_domains?: string[]
+          prerequisite_concepts?: string[]
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["journey_version_status"]
+          subtitle?: string
+          supersedes_version_id?: string | null
+          version_label: string
+        }
+        Update: {
+          artifact_template?: Json
+          audience?: string
+          central_question?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          duration_minutes?: number
+          enduring_understandings?: string[]
+          id?: string
+          journey_id?: string
+          learning_domains?: string[]
+          prerequisite_concepts?: string[]
+          published_at?: string | null
+          status?: Database["public"]["Enums"]["journey_version_status"]
+          subtitle?: string
+          supersedes_version_id?: string | null
+          version_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_versions_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "journeys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_versions_supersedes_version_id_fkey"
+            columns: ["supersedes_version_id"]
+            isOneToOne: false
+            referencedRelation: "journey_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journeys: {
         Row: {
-          id: string;
-          cohort_id: string;
-          learner_profile_id: string;
-          assigned_orchestrator_id: string | null;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["cohort_memberships"]["Row"]> & {
-          cohort_id: string;
-          learner_profile_id: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["cohort_memberships"]["Insert"]>;
-        Relationships: [];
-      };
-      journey_enrollments: {
+          created_at: string
+          created_by: string
+          current_published_version_id: string | null
+          id: string
+          location: string
+          organization_id: string
+          region: string
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          current_published_version_id?: string | null
+          id?: string
+          location: string
+          organization_id: string
+          region: string
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          current_published_version_id?: string | null
+          id?: string
+          location?: string
+          organization_id?: string
+          region?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journeys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journeys_current_published_version_fk"
+            columns: ["current_published_version_id"]
+            isOneToOne: false
+            referencedRelation: "journey_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journeys_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_memberships: {
         Row: {
-          id: string;
-          cohort_id: string;
-          learner_profile_id: string;
-          journey_version_id: string;
-          status: string;
-          current_stop_id: string | null;
-          started_at: string | null;
-          meaningfully_completed_at: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["journey_enrollments"]["Row"]> & {
-          cohort_id: string;
-          learner_profile_id: string;
-          journey_version_id: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["journey_enrollments"]["Insert"]>;
-        Relationships: [];
-      };
-      resurfacing_events: {
+          created_at: string
+          id: string
+          organization_id: string
+          profile_id: string
+          role: Database["public"]["Enums"]["org_role"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          profile_id: string
+          role: Database["public"]["Enums"]["org_role"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          profile_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_memberships_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_memberships_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
         Row: {
-          id: string;
-          journey_enrollment_id: string;
-          learner_profile_id: string;
-          source_journey_version_id: string;
-          trigger_type: string;
-          scheduled_at: string | null;
-          prompt: string;
-          source_media_asset_id: string | null;
-          prior_response_hidden: boolean;
-          learner_response: string | null;
-          connected_journey_id: string | null;
-          completed_at: string | null;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["resurfacing_events"]["Row"]> & {
-          journey_enrollment_id: string;
-          learner_profile_id: string;
-          source_journey_version_id: string;
-          trigger_type: string;
-          prompt: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["resurfacing_events"]["Insert"]>;
-        Relationships: [];
-      };
-    };
-    Views: Record<string, never>;
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_path: string | null
+          created_at: string
+          display_name: string
+          email: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_path?: string | null
+          created_at?: string
+          display_name: string
+          email: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_path?: string | null
+          created_at?: string
+          display_name?: string
+          email?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
       record_audit_event: {
         Args: {
-          p_organization_id: string;
-          p_entity_type: string;
-          p_entity_id: string;
-          p_action: string;
-          p_metadata?: Json;
-        };
-        Returns: string;
-      };
-      publish_journey_version: {
-        Args: { p_version_id: string };
-        Returns: null;
-      };
-    };
+          p_action: string
+          p_entity_id: string
+          p_entity_type: string
+          p_metadata?: Json
+          p_organization_id: string
+        }
+        Returns: string
+      }
+    }
     Enums: {
-      org_role: "owner" | "admin" | "creator" | "orchestrator" | "reviewer";
       journey_version_status:
         | "concept"
         | "draft"
@@ -487,17 +394,146 @@ export type Database = {
         | "private_adult_walk"
         | "learner_pilot"
         | "published"
-        | "archived";
-      field_note_visibility: "private" | "mentor" | "artifact";
-      media_visibility: "private" | "mentor" | "artifact" | "organization";
-      review_category:
-        | "learning_design"
-        | "factual"
-        | "sources"
-        | "safety"
-        | "accessibility"
-        | "field_test"
-        | "maintenance";
-    };
-  };
-};
+        | "archived"
+      org_role: "owner" | "creator" | "orchestrator" | "reviewer" | "admin"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      journey_version_status: [
+        "concept",
+        "draft",
+        "field_test",
+        "private_adult_walk",
+        "learner_pilot",
+        "published",
+        "archived",
+      ],
+      org_role: ["owner", "creator", "orchestrator", "reviewer", "admin"],
+    },
+  },
+} as const
+

@@ -35,24 +35,26 @@ async function recordAudit(
   action: string,
   metadata: Record<string, unknown> = {},
 ) {
-  await db.rpc("record_audit_event", {
+  const { error } = await db.rpc("record_audit_event", {
     p_organization_id: OWLL_ORG_ID,
     p_entity_type: entityType,
     p_entity_id: entityId,
     p_action: action,
     p_metadata: metadata as Database["public"]["Functions"]["record_audit_event"]["Args"]["p_metadata"],
   });
+  if (error) throw error;
 }
 
 async function getLatestEditableVersion(
   db: Db,
   journeyId: string,
 ): Promise<DbVersionRow | null> {
-  const { data } = await db
+  const { data, error } = await db
     .from("journey_versions")
     .select("*")
     .eq("journey_id", journeyId)
     .order("created_at", { ascending: false });
+  if (error) throw error;
 
   const versions = (data ?? []) as DbVersionRow[];
   const editable = versions.find((version) => isVersionEditable(version.status));
@@ -64,11 +66,12 @@ async function loadJourneyRecord(
   journey: DbJourneyRow,
   version: DbVersionRow,
 ): Promise<CreatorBetaJourneyRecord> {
-  const { data: stopRows } = await db
+  const { data: stopRows, error: stopError } = await db
     .from("journey_stops")
     .select("*")
     .eq("journey_version_id", version.id)
     .order("position");
+  if (stopError) throw stopError;
 
   const stops = (stopRows ?? []) as DbStopRow[];
   const encounters = stops.map((stop) => stopRowToEncounter(journey.id, stop));
@@ -91,11 +94,12 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
     mode: "connected",
 
     async listJourneys() {
-      const { data: journeyRows } = await db
+      const { data: journeyRows, error: listError } = await db
         .from("journeys")
         .select("id, slug, title, location, updated_at")
         .eq("organization_id", OWLL_ORG_ID)
         .order("updated_at", { ascending: false });
+      if (listError) throw listError;
 
       const summaries: CreatorBetaJourneySummary[] = [];
 
@@ -103,10 +107,11 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
         const version = await getLatestEditableVersion(db, row.id);
         if (!version) continue;
 
-        const { count } = await db
+        const { count, error: countError } = await db
           .from("journey_stops")
           .select("id", { count: "exact", head: true })
           .eq("journey_version_id", version.id);
+        if (countError) throw countError;
 
         summaries.push({
           id: row.id,
@@ -123,11 +128,12 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
     },
 
     async getJourneyById(journeyId) {
-      const { data: journey } = await db
+      const { data: journey, error: journeyError } = await db
         .from("journeys")
         .select("id, slug, title, region, location")
         .eq("id", journeyId)
         .maybeSingle();
+      if (journeyError) throw journeyError;
 
       if (!journey) return null;
 
@@ -269,7 +275,8 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
       if (updates.locationLabel) journeyPatch.location = updates.locationLabel;
       if (Object.keys(journeyPatch).length > 0) {
         journeyPatch.updated_at = new Date().toISOString();
-        await db.from("journeys").update(journeyPatch).eq("id", journeyId);
+        const { error: journeyError } = await db.from("journeys").update(journeyPatch).eq("id", journeyId);
+        if (journeyError) throw journeyError;
       }
 
       const { error: versionError } = await db

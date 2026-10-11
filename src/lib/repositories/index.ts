@@ -2,7 +2,6 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createLocalCreatorBetaRepository } from "./creator-beta-local";
 import { createSupabaseCreatorBetaRepository } from "./creator-beta-supabase";
 import { createLocalRepositories } from "./local";
-import { createSupabaseRepositories } from "./supabase";
 import type { CreatorBetaRepository } from "./creator-beta-types";
 import type { RepositoryBundle } from "./types";
 
@@ -21,21 +20,17 @@ export function getDemoRepositories(): RepositoryBundle {
 
 /** Connected Mode — throws if Supabase is unavailable; never falls back to local. */
 export async function getConnectedRepositories(): Promise<RepositoryBundle> {
-  if (!isSupabaseConfigured()) {
-    throw new ConnectedRepositoryError("Supabase is not configured for Connected Mode.");
-  }
-  return createSupabaseRepositories();
+  // This is the historic institution/learner repository, NOT Creator Beta.
+  // It depends on tables deliberately absent from Creator Alpha.
+  // Fail closed even if public Supabase configuration is present.
+  throw new ConnectedRepositoryError(
+    "Institutional connected mode is disabled in Creator Alpha. Use Creator Beta for adult cloud drafts.",
+  );
 }
 
-/**
- * Server-side repository selector.
- * Demo when env absent; Connected otherwise (no silent fallback).
- */
+/** Legacy learner/mentor/First Landing interfaces remain explicitly demo-only. */
 export async function getRepositories(): Promise<RepositoryBundle> {
-  if (!isSupabaseConfigured()) {
-    return getDemoRepositories();
-  }
-  return getConnectedRepositories();
+  return getDemoRepositories();
 }
 
 /** Creator Beta persistence — demo in-memory when Supabase is absent. */
