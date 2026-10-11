@@ -12,10 +12,14 @@ function PersistenceBadge({
   mode,
   lastSavedAt,
   syncError,
+  syncStatus,
+  onRetry,
 }: {
   mode: "local" | "connected";
   lastSavedAt: string | null;
   syncError: string | null;
+  syncStatus: "idle" | "saving" | "saved" | "failed";
+  onRetry: () => void;
 }) {
   return (
     <div className="text-xs text-muted">
@@ -26,8 +30,21 @@ function PersistenceBadge({
       >
         {mode === "connected" ? "Connected persistence" : "Local browser draft"}
       </span>
-      {lastSavedAt ? <span className="ml-2">Saved {new Date(lastSavedAt).toLocaleTimeString()}</span> : null}
-      {syncError ? <p className="mt-1 text-danger">{syncError}</p> : null}
+      {mode === "connected" && syncStatus === "saving" ? (
+        <span className="ml-2" role="status">Saving changes…</span>
+      ) : null}
+      {mode === "connected" && syncStatus === "saved" && lastSavedAt ? (
+        <span className="ml-2" role="status">Saved {new Date(lastSavedAt).toLocaleTimeString()}</span>
+      ) : null}
+      {syncError ? (
+        <div role="alert" className="mt-2">
+          <p className="text-danger">{syncError}</p>
+          <button type="button" onClick={onRetry}
+            className="mt-1 rounded border border-danger px-2 py-1 font-medium text-danger">
+            Retry unsaved changes
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -41,6 +58,8 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
     loading,
     syncError,
     lastSavedAt,
+    syncStatus,
+    retryFailedSaves,
     persistenceMode,
     queueJourneySave,
     queueEncounterSave,
@@ -113,6 +132,8 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
             mode={persistenceMode}
             lastSavedAt={lastSavedAt}
             syncError={syncError}
+            syncStatus={syncStatus}
+            onRetry={retryFailedSaves}
           />
           <span className="rounded-full border border-border px-3 py-1 text-xs uppercase tracking-wide text-muted">
             {journey.status}
