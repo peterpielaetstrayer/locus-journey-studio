@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { DebouncedSaveQueue, type SaveQueuePhase } from "@/lib/creator-beta/debounced-save-queue";
 import {
   createConnectedEncounter,
   createConnectedJourney,
@@ -22,7 +23,11 @@ export function useCreatorBetaSync(journeyId: string) {
   const [loading, setLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const queuesRef = useRef<{
+    journey: DebouncedSaveQueue<UpdateCreatorBetaJourneyInput>;
+    encounter: DebouncedSaveQueue<Partial<Encounter>>;
+  } | null>(null);
 
   const clientMode = getClientPersistenceMode();
   const looksLikeConnectedId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -56,45 +61,96 @@ export function useCreatorBetaSync(journeyId: string) {
     };
   }, [clientMode, hydrateFromRecord, journey, journeyId]);
 
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const updateQueueStatus = (
+      recordId: string,
+      phase: SaveQueuePhase,
+      error?: unknown,
+    ) => {
+      if (phase === "failed") {
+        setSyncError(
+          `Could not sync ${recordId}: ${error instanceof Error ? error.message : "save failed"}. Your edits remain in this browser. Retry the save.`,
+        );
+      }
+      if (phase === "saved") setLastSavedAt(new Date().toISOString());
+
+      const queues = queuesRef.current;
+      if (queues?.journey.hasFailed() || queues?.encounter.hasFailed()) {
+        setSyncStatus("failed");
+      } else if (phase === "queued" || phase === "saving" ||
+          queues?.journey.hasOutstanding() || queues?.encounter.hasOutstanding()) {
+        setSyncStatus("saving");
+        if (phase === "queued") setSyncError(null);
+      } else {
+        setSyncStatus("saved");
+        setSyncError(null);
+      }
+    };
+
+    const queues = {
+      journey: new DebouncedSaveQueue<UpdateCreatorBetaJourneyInput>(
+        async (_recordId, patch) => {
+          const saved = await saveConnectedJourney(journeyId, patch);
+          if (!saved) throw new Error("Connected Journey was not saved");
+          // Never rehydrate from the network acknowledgment here: doing so
+          // could replace a newer optimistic edit with an older response.
+        },
+        updateQueueStatus,
+      ),
+      encounter: new DebouncedSaveQueue<Partial<Encounter>>(
+        async (encounterId, patch) => {
+          const saved = await saveConnectedEncounter(journeyId, encounterId, patch);
+          if (!saved) throw new Error("Connected Encounter was not saved");
+          // Same rule: the local store remains the current editor truth.
+        },
+        updateQueueStatus,
+      ),
+    };
+    queuesRef.current = queues;
+
+    function flushWhenHidden() {
+      // Best-effort dispatch before navigation/backgrounding. Hard browser
+      // termination still requires later server-vs-local reconciliation.
+      void queues.journey.flushAll();
+      void queues.encounter.flushAll();
+    }
+    function onVisibilityChange() {
+      if (document.visibilityState === "hidden") flushWhenHidden();
+    }
+
+    window.addEventListener("pagehide", flushWhenHidden);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pagehide", flushWhenHidden);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      flushWhenHidden();
+      if (queuesRef.current === queues) queuesRef.current = null;
+    };
+  }, [isConnected, journeyId]);
+
   const queueJourneySave = useCallback(
     (updates: UpdateCreatorBetaJourneyInput) => {
       if (!isConnected) return;
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(async () => {
-        try {
-          const record = await saveConnectedJourney(journeyId, updates);
-          if (record) {
-            hydrateFromRecord(record);
-            setLastSavedAt(new Date().toISOString());
-            setSyncError(null);
-          }
-        } catch (error) {
-          setSyncError(error instanceof Error ? error.message : "Save failed");
-        }
-      }, 600);
+      queuesRef.current?.journey.enqueue(journeyId, updates);
     },
-    [hydrateFromRecord, isConnected, journeyId],
+    [isConnected, journeyId],
   );
 
   const queueEncounterSave = useCallback(
     (encounterId: string, updates: Partial<Encounter>) => {
       if (!isConnected) return;
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(async () => {
-        try {
-          const encounter = await saveConnectedEncounter(journeyId, encounterId, updates);
-          if (encounter) {
-            useCreatorBetaStore.getState().updateEncounter(encounterId, encounter);
-            setLastSavedAt(new Date().toISOString());
-            setSyncError(null);
-          }
-        } catch (error) {
-          setSyncError(error instanceof Error ? error.message : "Encounter save failed");
-        }
-      }, 600);
+      queuesRef.current?.encounter.enqueue(encounterId, updates);
     },
-    [isConnected, journeyId],
+    [isConnected],
   );
+
+  const retryFailedSaves = useCallback(() => {
+    queuesRef.current?.journey.retryFailed();
+    queuesRef.current?.encounter.retryFailed();
+  }, []);
 
   const addConnectedEncounter = useCallback(async () => {
     if (!isConnected) {
@@ -126,6 +182,8 @@ export function useCreatorBetaSync(journeyId: string) {
     loading,
     syncError,
     lastSavedAt,
+    syncStatus,
+    retryFailedSaves,
     persistenceMode: isConnected ? ("connected" as const) : persistenceMode,
     queueJourneySave,
     queueEncounterSave,
