@@ -194,6 +194,7 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
         };
         const stop = encounterToStopInsert("00000000-0000-0000-0000-000000000000", encounter);
         const { journey_version_id: _provisionalVersionId, ...withoutVersion } = stop;
+        void _provisionalVersionId;
         return withoutVersion;
       });
 
