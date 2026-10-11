@@ -103,6 +103,10 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ""
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ""
+      - name: Generate CLI migration name for transactional RPC (no hosted writes)
+        run: |
+          supabase migration new creator_atomic_creation
+          ls -la supabase/migrations/*_creator_atomic_creation.sql
       - name: Save generated types and diagnostic for review
         uses: actions/upload-artifact@v4
         with:
