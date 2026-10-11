@@ -17,7 +17,27 @@ permissions:
 jobs:
   package:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: creator_alpha_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: dev-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d creator_alpha_test"
+          --health-interval 5s
+          --health-timeout 4s
+          --health-retries 12
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGDATABASE: creator_alpha_test
+      PGUSER: postgres
+      PGPASSWORD: dev-only
     steps:
       - uses: actions/checkout@v4
       - name: Check exact active creator migration set
@@ -32,3 +52,9 @@ jobs:
           ! grep -Eq 'create table public\.(learner_profiles|cohorts|field_notes|journey_enrollments)' supabase/migrations/20261011205708_creator_alpha_initial.sql
           ! grep -q "insert into public.learner_profiles" supabase/seed.sql
           echo "One audited creator-only migration, no legacy learner seed."
+      - name: Apply active alpha migration in disposable Postgres 17
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/auth-shim.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261011205708_creator_alpha_initial.sql
+      - name: Assert synthetic adult RLS access
+        run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-only-rls-smoke.sql
