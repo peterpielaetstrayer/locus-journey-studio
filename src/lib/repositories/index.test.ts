@@ -4,19 +4,7 @@ vi.mock("@/lib/supabase/config", () => ({
   isSupabaseConfigured: vi.fn(),
 }));
 
-vi.mock("@/lib/repositories/supabase", () => ({
-  createSupabaseRepositories: vi.fn(async () => ({
-    mode: "connected" as const,
-    journeys: {},
-    fieldNotes: {},
-    interventions: {},
-    artifacts: {},
-    reviews: {},
-  })),
-}));
-
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createSupabaseRepositories } from "@/lib/repositories/supabase";
 import {
   ConnectedRepositoryError,
   getConnectedRepositories,
@@ -24,27 +12,23 @@ import {
   getRepositories,
 } from "@/lib/repositories";
 
-describe("repository adapter selection", () => {
-  it("demo adapter reports demo mode", () => {
-    const repos = getDemoRepositories();
-    expect(repos.mode).toBe("demo");
-  });
-
-  it("getRepositories uses demo when Supabase not configured", async () => {
+describe("Creator Alpha legacy backend boundary", () => {
+  it("keeps the First Landing legacy interface in explicitly simulated demo mode", async () => {
     vi.mocked(isSupabaseConfigured).mockReturnValue(false);
-    const repos = await getRepositories();
-    expect(repos.mode).toBe("demo");
+    expect(getDemoRepositories().mode).toBe("demo");
+    expect((await getRepositories()).mode).toBe("demo");
   });
 
-  it("getConnectedRepositories throws when Supabase not configured", async () => {
+  it("does NOT activate legacy institutional storage when Supabase is configured", async () => {
+    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
+    expect((await getRepositories()).mode).toBe("demo");
+    await expect(getConnectedRepositories()).rejects.toThrow(
+      "Institutional connected mode is disabled in Creator Alpha",
+    );
+  });
+
+  it("denies legacy connected access even when no Supabase variables exist", async () => {
     vi.mocked(isSupabaseConfigured).mockReturnValue(false);
     await expect(getConnectedRepositories()).rejects.toBeInstanceOf(ConnectedRepositoryError);
-  });
-
-  it("getRepositories uses connected when configured", async () => {
-    vi.mocked(isSupabaseConfigured).mockReturnValue(true);
-    const repos = await getRepositories();
-    expect(repos.mode).toBe("connected");
-    expect(createSupabaseRepositories).toHaveBeenCalled();
   });
 });
