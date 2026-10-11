@@ -72,10 +72,11 @@ export class DebouncedSaveQueue<TPatch extends object> {
     entry.pending = null;
     this.onState(recordId, "saving");
 
+    let succeeded = false;
     const writing = Promise.resolve()
       .then(() => this.write(recordId, patch))
       .then(() => {
-        this.onState(recordId, "saved");
+        succeeded = true;
       })
       .catch((error: unknown) => {
         // Keep edits made DURING the failing request. Never silently drop
@@ -90,6 +91,7 @@ export class DebouncedSaveQueue<TPatch extends object> {
       })
       .finally(() => {
         entry.inFlight = null;
+        if (succeeded) this.onState(recordId, "saved");
         if (entry.pending && !entry.failed && entry.timer === null) {
           this.schedule(recordId, 0);
         }
