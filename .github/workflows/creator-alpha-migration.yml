@@ -72,17 +72,17 @@ jobs:
           supabase gen types typescript --db-url "postgresql://postgres:dev-only@localhost:5432/creator_alpha_test" --schema public > /tmp/creator-alpha.types.ts
           test -s /tmp/creator-alpha.types.ts
           echo "Generated TypeScript schema lines: $(wc -l < /tmp/creator-alpha.types.ts)"
-      - name: Diagnostic only - check existing application against actual creator-alpha types
+      - name: Enforce application compatibility with generated creator-alpha schema
         run: |
           npm ci
           cp /tmp/creator-alpha.types.ts src/types/database.types.ts
-          if npm run typecheck > /tmp/creator-alpha-typecheck.log 2>&1; then
-            echo "CREATOR_ALPHA_TYPES_RESULT=PASS"
-          else
-            echo "CREATOR_ALPHA_TYPES_RESULT=FAIL_LEGACY_APP_REFERENCES"
-            echo "Typecheck failure excerpts for planned adapter isolation:"
-            grep 'error TS' /tmp/creator-alpha-typecheck.log | head -35 || true
-          fi
+          npm run typecheck
+      - name: Emit generated types for source review (schema only, no credentials)
+        run: |
+          echo "LOCUS_TYPES_BEGIN"
+          base64 -w 0 /tmp/creator-alpha.types.ts
+          echo
+          echo "LOCUS_TYPES_END"
       - name: Save generated types and diagnostic for review
         uses: actions/upload-artifact@v4
         with:
