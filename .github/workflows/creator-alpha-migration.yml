@@ -85,6 +85,15 @@ jobs:
           base64 -w 0 /tmp/creator-alpha.types.ts
           echo
           echo "LOCUS_TYPES_END"
+      - name: Run app unit tests against creator-only types
+        run: npm test
+      - name: Lint application code
+        run: npm run lint
+      - name: Build demo-only application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ""
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ""
       - name: Save generated types and diagnostic for review
         uses: actions/upload-artifact@v4
         with:
