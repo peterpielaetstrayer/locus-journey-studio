@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - creator-beta-v0.2
     paths:
       - "src/**"
       - "docs/**"
