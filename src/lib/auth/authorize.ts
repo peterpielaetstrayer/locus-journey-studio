@@ -140,36 +140,12 @@ export async function requireEditableJourneyVersion(
   return { ctx, status: version.status };
 }
 
+/** Legacy cohort/orchestrator data is absent from the adult Creator Alpha schema. */
 export async function requireAssignedOrchestrator(
-  ctx: AuthenticatedContext,
-  enrollmentId: string,
+  _ctx: AuthenticatedContext,
+  _enrollmentId: string,
 ): Promise<AuthenticatedContext> {
-  requireOrganizationRole(ctx, ["owner", "admin", "orchestrator"]);
-  const supabase = await createClient();
-  const { data: enrollment } = await supabase
-    .from("journey_enrollments")
-    .select("id, cohort_id")
-    .eq("id", enrollmentId)
-    .maybeSingle();
-  if (!enrollment) {
-    throw new ForbiddenError();
-  }
-  const isAdmin = ctx.memberships.some((m) =>
-    ["owner", "admin"].includes(m.role),
-  );
-  if (isAdmin) {
-    return ctx;
-  }
-  const { data: assignment } = await supabase
-    .from("cohort_memberships")
-    .select("id")
-    .eq("cohort_id", enrollment.cohort_id)
-    .eq("assigned_orchestrator_id", ctx.user.id)
-    .maybeSingle();
-  if (!assignment) {
-    throw new ForbiddenError();
-  }
-  return ctx;
+  throw new ForbiddenError("Institutional delivery is unavailable in Creator Alpha.");
 }
 
 export function mapAuthErrorToResponse(error: unknown) {
