@@ -140,7 +140,11 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
     async createJourney(input: CreateCreatorBetaJourneyInput) {
       const {
         data: { user },
+        error: authError,
       } = await db.auth.getUser();
+      if (authError || !user) {
+        throw new Error("An authenticated adult creator is required.");
+      }
 
       const baseSlug = slugifyTitle(input.proposal.suggestedTitle);
       const slug = `${baseSlug}-${Date.now().toString(36).slice(-6)}`;
@@ -153,7 +157,7 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
           title: input.proposal.suggestedTitle,
           region: "General",
           location: input.proposal.suggestedLearnerContext.description.slice(0, 120) || "Unspecified",
-          created_by: user?.id ?? null,
+          created_by: user.id,
         })
         .select("id, slug, title, region, location")
         .single();
@@ -165,7 +169,7 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
       const draftJourney: CreatorJourney = {
         id: journeyRow.id,
         title: input.proposal.suggestedTitle,
-        creatorIds: user?.id ? [user.id] : [],
+        creatorIds: [user.id],
         status: "draft",
         thread: input.proposal.suggestedThread,
         learnerContext: input.proposal.suggestedLearnerContext,
@@ -173,7 +177,7 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
         sourceContext: [{ type: "other", id: input.proposal.id }],
         provenance: {
           origin: input.proposal.provenance.origin,
-          createdById: user?.id,
+          createdById: user.id,
           sourceRefs: [{ type: "other", id: input.proposal.id }],
           version: input.proposal.provenance.version,
         },

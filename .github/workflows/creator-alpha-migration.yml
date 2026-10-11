@@ -1,0 +1,93 @@
+name: Creator alpha migration package check
+
+on:
+  pull_request:
+    branches:
+      - design/creator-only-supabase-schema-2026-10-11
+    paths:
+      - ".github/workflows/creator-alpha-migration.yml"
+      - "supabase/**"
+      - "docs/database/**"
+      - "src/types/database.types.ts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: creator_alpha_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: dev-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d creator_alpha_test"
+          --health-interval 5s
+          --health-timeout 4s
+          --health-retries 12
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGDATABASE: creator_alpha_test
+      PGUSER: postgres
+      PGPASSWORD: dev-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.110.0
+      - name: Check exact active creator migration set
+        run: |
+          set -euo pipefail
+          count="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l)"
+          test "$count" -eq 1
+          test -f supabase/migrations/20261011205708_creator_alpha_initial.sql
+          test ! -e supabase/migrations/20260728180000_initial_schema.sql
+          cmp docs/database/creator-only-v0.1.proposed.sql supabase/migrations/20261011205708_creator_alpha_initial.sql
+          grep -q 'enabled = false' supabase/config.toml
+          ! grep -Eq 'create table public\.(learner_profiles|cohorts|field_notes|journey_enrollments)' supabase/migrations/20261011205708_creator_alpha_initial.sql
+          ! grep -q "insert into public.learner_profiles" supabase/seed.sql
+          echo "One audited creator-only migration, no legacy learner seed."
+      - name: Apply active alpha migration in disposable Postgres 17
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/auth-shim.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261011205708_creator_alpha_initial.sql
+      - name: Assert synthetic adult RLS access
+        run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-only-rls-smoke.sql
+      - name: Check Creator Beta repository SQL column contract
+        run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-adapter-schema-contract.sql
+      - name: Generate real PostgreSQL schema types from isolated creator database
+        run: |
+          supabase gen types typescript --db-url "postgresql://postgres:dev-only@localhost:5432/creator_alpha_test" --schema public > /tmp/creator-alpha.types.ts
+          test -s /tmp/creator-alpha.types.ts
+          echo "Generated TypeScript schema lines: $(wc -l < /tmp/creator-alpha.types.ts)"
+      - name: Diagnostic only - check existing application against actual creator-alpha types
+        run: |
+          npm ci
+          cp /tmp/creator-alpha.types.ts src/types/database.types.ts
+          if npm run typecheck > /tmp/creator-alpha-typecheck.log 2>&1; then
+            echo "CREATOR_ALPHA_TYPES_RESULT=PASS"
+          else
+            echo "CREATOR_ALPHA_TYPES_RESULT=FAIL_LEGACY_APP_REFERENCES"
+            echo "Typecheck failure excerpts for planned adapter isolation:"
+            grep 'error TS' /tmp/creator-alpha-typecheck.log | head -35 || true
+          fi
+      - name: Save generated types and diagnostic for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: creator-alpha-schema-types
+          path: |
+            /tmp/creator-alpha.types.ts
+            /tmp/creator-alpha-typecheck.log
+          retention-days: 7
