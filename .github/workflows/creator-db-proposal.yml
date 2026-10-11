@@ -1,0 +1,49 @@
+name: Creator-only database proposal smoke test
+
+on:
+  pull_request:
+    branches:
+      - creator-beta-v0.2
+    paths:
+      - "docs/database/**"
+      - ".github/workflows/creator-db-proposal.yml"
+  workflow_dispatch:
+
+jobs:
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: locus_creator_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: dev-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d locus_creator_test"
+          --health-interval 5s
+          --health-timeout 4s
+          --health-retries 12
+
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGDATABASE: locus_creator_test
+      PGUSER: postgres
+      PGPASSWORD: dev-only
+
+    steps:
+      - name: Checkout draft branch
+        uses: actions/checkout@v4
+      - name: Prepare ephemeral minimal Supabase Auth shim
+        run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/auth-shim.sql
+      - name: Apply REVIEW-ONLY proposed creator SQL to ephemeral Postgres
+        run: psql -X -v ON_ERROR_STOP=1 -f docs/database/creator-only-v0.1.proposed.sql
+      - name: Check synthetic adult role isolation and RLS
+        run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-only-rls-smoke.sql
+      - name: Verify no learner or cohort tables were created
+        run: |
+          psql -X -At -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';" | grep -x 7
