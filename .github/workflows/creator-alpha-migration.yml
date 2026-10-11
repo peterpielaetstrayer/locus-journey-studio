@@ -4,11 +4,13 @@ on:
   pull_request:
     branches:
       - design/creator-only-supabase-schema-2026-10-11
+      - feature/creator-alpha-migration-package
     paths:
       - ".github/workflows/creator-alpha-migration.yml"
       - "supabase/**"
       - "docs/database/**"
       - "src/types/database.types.ts"
+      - "src/lib/**"
   workflow_dispatch:
 
 permissions:
