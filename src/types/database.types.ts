@@ -375,6 +375,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_creator_journey: {
+        Args: {
+          p_audience: string
+          p_description: string
+          p_location: string
+          p_slug: string
+          p_stops: Json
+          p_thread: string
+          p_title: string
+          p_version_meta: Json
+        }
+        Returns: {
+          journey_id: string
+          version_id: string
+        }[]
+      }
       record_audit_event: {
         Args: {
           p_action: string

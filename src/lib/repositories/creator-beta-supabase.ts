@@ -14,7 +14,7 @@ import {
 } from "@/lib/creator-beta/db-adapter";
 import { isVersionEditable } from "@/lib/repositories/local";
 import { OWLL_ORG_ID } from "@/lib/auth/authorize";
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CreatorJourney, Encounter } from "@/types/creator-beta";
 import type {
@@ -152,69 +152,34 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
         throw new Error("An authenticated adult creator is required.");
       }
 
-      const baseSlug = slugifyTitle(input.proposal.suggestedTitle);
-      const slug = `${baseSlug}-${Date.now().toString(36).slice(-6)}`;
+      const proposal = input.proposal;
+      const slug = `${slugifyTitle(proposal.suggestedTitle)}-${Date.now().toString(36).slice(-6)}`;
 
-      const { data: journeyRow, error: journeyError } = await db
-        .from("journeys")
-        .insert({
-          organization_id: OWLL_ORG_ID,
-          slug,
-          title: input.proposal.suggestedTitle,
-          region: "General",
-          location: input.proposal.suggestedLearnerContext.description.slice(0, 120) || "Unspecified",
-          created_by: user.id,
-        })
-        .select("id, slug, title, region, location")
-        .single();
-
-      if (journeyError || !journeyRow) {
-        throw journeyError ?? new Error("Failed to create journey");
-      }
-
+      // The database RPC is a SINGLE transaction. Failure at any Encounter
+      // causes Journey, version, all earlier Encounters and audit to roll back.
+      // This is still creator-only (no learner or cohort data).
       const draftJourney: CreatorJourney = {
-        id: journeyRow.id,
-        title: input.proposal.suggestedTitle,
+        id: "",
+        title: proposal.suggestedTitle,
         creatorIds: [user.id],
         status: "draft",
-        thread: input.proposal.suggestedThread,
-        learnerContext: input.proposal.suggestedLearnerContext,
+        thread: proposal.suggestedThread,
+        learnerContext: proposal.suggestedLearnerContext,
         encounterIds: [],
-        sourceContext: [{ type: "other", id: input.proposal.id }],
+        sourceContext: [{ type: "other", id: proposal.id }],
         provenance: {
-          origin: input.proposal.provenance.origin,
+          origin: proposal.provenance.origin,
           createdById: user.id,
-          sourceRefs: [{ type: "other", id: input.proposal.id }],
-          version: input.proposal.provenance.version,
+          sourceRefs: [{ type: "other", id: proposal.id }],
+          version: proposal.provenance.version,
         },
-        description: input.proposal.seedText,
+        description: proposal.seedText,
       };
 
-      const { data: versionRow, error: versionError } = await db
-        .from("journey_versions")
-        .insert({
-          journey_id: journeyRow.id,
-          version_label: "Creator Beta draft",
-          status: "draft",
-          central_question: input.proposal.suggestedThread.statement,
-          subtitle: "",
-          description: input.proposal.seedText,
-          audience: input.proposal.suggestedLearnerContext.description,
-          artifact_template: buildVersionMeta(draftJourney) as unknown as Database["public"]["Tables"]["journey_versions"]["Insert"]["artifact_template"],
-          created_by: user?.id ?? null,
-        })
-        .select("*")
-        .single();
-
-      if (versionError || !versionRow) {
-        throw versionError ?? new Error("Failed to create journey version");
-      }
-
-      const encounters: Encounter[] = [];
-      for (const [index, suggestion] of input.proposal.suggestedEncounters.entries()) {
+      const proposedStops = proposal.suggestedEncounters.map((suggestion, index) => {
         const encounter: Encounter = {
           id: "",
-          journeyId: journeyRow.id,
+          journeyId: "",
           order: index + 1,
           title: suggestion.title,
           target: suggestion.target,
@@ -222,32 +187,36 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
           learnerAction: suggestion.learnerAction,
           evidenceRequest: suggestion.evidenceRequest,
           provenance: {
-            origin: input.proposal.provenance.origin,
-            sourceRefs: [{ type: "other", id: input.proposal.id }],
-            version: input.proposal.provenance.version,
+            origin: proposal.provenance.origin,
+            sourceRefs: [{ type: "other", id: proposal.id }],
+            version: proposal.provenance.version,
           },
         };
-
-        const stopInsert = encounterToStopInsert(versionRow.id, encounter);
-        const { data: stopRow, error: stopError } = await db
-          .from("journey_stops")
-          .insert(stopInsert)
-          .select("*")
-          .single();
-
-        if (stopError || !stopRow) {
-          throw stopError ?? new Error("Failed to create encounter");
-        }
-
-        encounters.push(stopRowToEncounter(journeyRow.id, stopRow as DbStopRow));
-      }
-
-      await recordAudit(db, "journey_version", versionRow.id, "version_created", {
-        source: "creator-beta",
-        encounterCount: encounters.length,
+        const stop = encounterToStopInsert("00000000-0000-0000-0000-000000000000", encounter);
+        const { journey_version_id: _provisionalVersionId, ...withoutVersion } = stop;
+        void _provisionalVersionId;
+        return withoutVersion;
       });
 
-      return loadJourneyRecord(db, journeyRow as DbJourneyRow, versionRow as DbVersionRow);
+      const { data: created, error: createError } = await db.rpc("create_creator_journey", {
+        p_slug: slug,
+        p_title: proposal.suggestedTitle,
+        p_location: proposal.suggestedLearnerContext.description.slice(0, 120),
+        p_thread: proposal.suggestedThread.statement,
+        p_audience: proposal.suggestedLearnerContext.description,
+        p_description: proposal.seedText,
+        p_version_meta: buildVersionMeta(draftJourney) as unknown as Json,
+        p_stops: proposedStops as unknown as Json,
+      });
+      if (createError) throw createError;
+      const savedId = created?.[0]?.journey_id;
+      if (!savedId) throw new Error("Creator Journey transaction returned no Journey ID");
+
+      const record = await this.getJourneyById(savedId);
+      if (!record) {
+        throw new Error("Creator Journey was committed, but its saved record could not be loaded.");
+      }
+      return record;
     },
 
     async updateJourney(journeyId, updates: UpdateCreatorBetaJourneyInput) {

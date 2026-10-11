@@ -6,6 +6,7 @@ on:
       - design/creator-only-supabase-schema-2026-10-11
       - feature/creator-alpha-migration-package
       - fix/creator-alpha-boundary-and-types
+      - integration/creator-alpha-core-2026-10-11
     paths:
       - ".github/workflows/creator-alpha-migration.yml"
       - "supabase/**"
@@ -57,8 +58,10 @@ jobs:
         run: |
           set -euo pipefail
           count="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l)"
-          test "$count" -eq 1
+          test "$count" -eq 2
           test -f supabase/migrations/20261011205708_creator_alpha_initial.sql
+          test -f supabase/migrations/20261011213129_creator_atomic_creation.sql
+          cmp docs/database/creator-atomic-rpc.proposed.sql supabase/migrations/20261011213129_creator_atomic_creation.sql
           test ! -e supabase/migrations/20260728180000_initial_schema.sql
           cmp docs/database/creator-only-v0.1.proposed.sql supabase/migrations/20261011205708_creator_alpha_initial.sql
           grep -q 'enabled = false' supabase/config.toml
@@ -71,6 +74,10 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261011205708_creator_alpha_initial.sql
       - name: Assert synthetic adult RLS access
         run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-only-rls-smoke.sql
+      - name: Test transactional Creator Alpha RPC in disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261011213129_creator_atomic_creation.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-atomic-smoke.sql
       - name: Check Creator Beta repository SQL column contract
         run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-adapter-schema-contract.sql
       - name: Generate real PostgreSQL schema types from isolated creator database
