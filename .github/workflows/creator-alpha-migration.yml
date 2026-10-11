@@ -58,3 +58,5 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261011205708_creator_alpha_initial.sql
       - name: Assert synthetic adult RLS access
         run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-only-rls-smoke.sql
+      - name: Check Creator Beta repository SQL column contract
+        run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-adapter-schema-contract.sql
