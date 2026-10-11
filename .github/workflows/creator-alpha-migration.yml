@@ -40,6 +40,13 @@ jobs:
       PGPASSWORD: dev-only
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.110.0
       - name: Check exact active creator migration set
         run: |
           set -euo pipefail
@@ -60,3 +67,27 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-only-rls-smoke.sql
       - name: Check Creator Beta repository SQL column contract
         run: psql -X -v ON_ERROR_STOP=1 -f docs/database/tests/creator-adapter-schema-contract.sql
+      - name: Generate real PostgreSQL schema types from isolated creator database
+        run: |
+          supabase gen types typescript --db-url "postgresql://postgres:dev-only@localhost:5432/creator_alpha_test" --schema public > /tmp/creator-alpha.types.ts
+          test -s /tmp/creator-alpha.types.ts
+          echo "Generated TypeScript schema lines: $(wc -l < /tmp/creator-alpha.types.ts)"
+      - name: Diagnostic only - check existing application against actual creator-alpha types
+        run: |
+          npm ci
+          cp /tmp/creator-alpha.types.ts src/types/database.types.ts
+          if npm run typecheck > /tmp/creator-alpha-typecheck.log 2>&1; then
+            echo "CREATOR_ALPHA_TYPES_RESULT=PASS"
+          else
+            echo "CREATOR_ALPHA_TYPES_RESULT=FAIL_LEGACY_APP_REFERENCES"
+            echo "Typecheck failure excerpts for planned adapter isolation:"
+            grep 'error TS' /tmp/creator-alpha-typecheck.log | head -35 || true
+          fi
+      - name: Save generated types and diagnostic for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: creator-alpha-schema-types
+          path: |
+            /tmp/creator-alpha.types.ts
+            /tmp/creator-alpha-typecheck.log
+          retention-days: 7
