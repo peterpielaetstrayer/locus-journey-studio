@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useCreatorBetaSync } from "@/hooks/useCreatorBetaSync";
 import { useCreatorBetaStore } from "@/store/creator-beta-store";
+import { buildJourneyManifestForExport, manifestFilename } from "@/lib/creator-beta/manifest-export";
 
 const fieldClass =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary";
@@ -47,6 +48,7 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
     addConnectedEncounter,
   } = useCreatorBetaSync(journeyId);
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const encounters = useMemo(
     () =>
@@ -102,6 +104,28 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
     setSelectedEncounterId(encounterId);
   }
 
+  function exportManifest() {
+    if (!journey) return;
+    const result = buildJourneyManifestForExport(journey, allEncounters);
+    if (!result.ok) {
+      setExportError(result.issues.join(" "));
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(result.manifest, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = manifestFilename(journey.title);
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    setExportError(null);
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -117,6 +141,13 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
           <span className="rounded-full border border-border px-3 py-1 text-xs uppercase tracking-wide text-muted">
             {journey.status}
           </span>
+          <button
+            type="button"
+            onClick={exportManifest}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:border-primary"
+          >
+            Export draft manifest (.json)
+          </button>
           <Link
             href={`/creator/beta/${journeyId}/preview`}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
@@ -141,6 +172,17 @@ export function CreatorBetaJourneyBuilder({ journeyId }: { journeyId: string }) 
             : " Changes save to this browser only until Supabase is configured and you sign in."}
         </p>
       </header>
+
+      {exportError ? (
+        <p role="alert" className="mb-4 rounded-lg border border-danger/40 p-3 text-sm text-danger">
+          Cannot export yet: {exportError}
+        </p>
+      ) : null}
+      <p className="mb-5 text-xs text-muted">
+        This file is a private, adult-only testing draft. Export does not publish the Journey,
+        verify factual accuracy, certify safety, or transmit any learner responses.
+        Review the prompts, source material, safety notes and accessibility before sharing.
+      </p>
 
       <div className="grid gap-8 xl:grid-cols-[330px_minmax(0,1fr)]">
         <aside className="space-y-5">
