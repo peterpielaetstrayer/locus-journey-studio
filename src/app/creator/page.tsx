@@ -49,21 +49,15 @@ export default function CreatorLibraryPage() {
     [connectedIds, localJourneys],
   );
 
-  const connectedSummaries = useMemo(() => {
-    const fromApi = connectedJourneys;
-    const apiIds = new Set(fromApi.map((journey) => journey.id));
-    const fromLocalConnected = connectedError ? [] : localJourneys
-      .filter((journey) => connectedIds.includes(journey.id) && !apiIds.has(journey.id))
-      .map((journey) => ({
-        id: journey.id,
-        slug: journey.id,
-        title: journey.title,
-        status: journey.status,
-        encounterCount: journey.encounterIds.length,
-        threadStatement: journey.thread.statement,
-      }));
-    return [...fromApi, ...fromLocalConnected];
-  }, [connectedError, connectedIds, connectedJourneys, localJourneys]);
+  // Only records returned by the connected API are confirmed cloud Journeys.
+  // A locally cached connected ID is never proof that the remote record exists.
+  const connectedSummaries = connectedJourneys;
+  const unverifiedCachedJourneys = useMemo(() => {
+    const confirmedIds = new Set(connectedJourneys.map((item) => item.id));
+    return localJourneys.filter((item) =>
+      connectedIds.includes(item.id) && !confirmedIds.has(item.id),
+    );
+  }, [connectedIds, connectedJourneys, localJourneys]);
 
   return (
     <div className="creator-surface mx-auto max-w-6xl px-4 py-8">
@@ -118,6 +112,27 @@ export default function CreatorLibraryPage() {
               </Link>
             ))}
           </div>
+        </section>
+      ) : null}
+
+      {clientMode === "connected" && connectedLoaded && unverifiedCachedJourneys.length > 0 ? (
+        <section className="mb-10 rounded-xl border border-accent/40 p-4" aria-labelledby="cached-journeys">
+          <h2 id="cached-journeys" className="font-semibold">
+            Browser copies not confirmed in Supabase
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            These Journeys exist in this browser but were not verified in the connected account.
+            Do not assume they have synchronized. Open a copy only to review or export it.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {unverifiedCachedJourneys.map((journey) => (
+              <li key={journey.id}>
+                <Link href={`/creator/beta/${journey.id}`} className="text-sm text-primary underline">
+                  {journey.title} (unverified local copy)
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 
