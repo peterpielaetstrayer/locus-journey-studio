@@ -31,3 +31,12 @@ Afterwards all seven public tables reported RLS enabled; security advisors retur
 4. Review account and region configuration, backup recovery, dependency advisories, idempotency, and conflicting-device edits before broader exposure.
 
 **Do not confuse a protected beta preview with a validated production system or a published learner experience.**
+
+
+## Lost-response idempotency improvement (draft PR #13)
+
+Creator Beta now derives a stable, creator-scoped Journey slug from the persisted proposal identity rather than wall-clock time. A repeated POST of the same proposal checks for an existing owned Journey and returns that original record; a concurrent duplicate is caught by the database's existing organization/slug unique constraint, then recovered only if its owner and provenance match. A failed unrelated SQL operation is never mistaken for a safe retry.
+
+The browser acceptance test additionally interrupts the response **after** Supabase commits a new Journey, then clicks Create again using the same proposal and checks that the original Journey ID is returned and only one Journey exists. Unit tests cover stable keys, different creators, absent identities and unique-violation classification. This is not an offline queue or concurrent-edit merge mechanism.
+
+**Build discipline:** CI and Vercel must reflect the exact current branch commit before claiming this is live. A Vercel Git deployment for this branch may be READY at an earlier commit even when newer code has not deployed due to account limits. Avoid labeling previous builds as having the later fix.
