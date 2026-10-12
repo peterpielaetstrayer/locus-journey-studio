@@ -191,6 +191,14 @@ GRANT SELECT, INSERT, UPDATE ON TABLE public.profiles,
 TO authenticated;
 GRANT SELECT, INSERT ON TABLE public.audit_events TO authenticated;
 
+-- Trusted administrator bootstrap: service_role is a confidential server-only
+-- credential, never exposed to browser clients. Public signup cannot assign
+-- memberships, but a trusted Auth admin can create profiles and memberships.
+-- RLS still restricts all ordinary authenticated/anonymous app clients.
+GRANT SELECT ON TABLE public.organizations TO service_role;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.profiles TO service_role;
+GRANT SELECT, INSERT ON TABLE public.organization_memberships TO service_role;
+
 CREATE POLICY profiles_select_self ON public.profiles FOR SELECT
 TO authenticated USING (id = (SELECT auth.uid()));
 CREATE POLICY profiles_insert_self ON public.profiles FOR INSERT
