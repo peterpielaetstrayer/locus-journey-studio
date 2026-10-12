@@ -184,6 +184,52 @@ try {
     await contextUnassigned.close();
   }
 
+  // Phone-first Creator Field Studio: real browser capture → reload → draft.
+  console.log("Browser: Creator Field Studio captures a real observation into a connected Journey");
+  await pageA.goto(base + "/creator/field");
+  await pageA.getByRole("heading", { name: "Notice something. Build from it." }).waitFor();
+  const fieldObservation = "A synthetic observation of different soil textures near a boardwalk";
+  await pageA.getByLabel("Your field observation").fill(fieldObservation);
+  await pageA.getByRole("button", { name: "Keep observation" }).click();
+  await pageA.getByText("FIELD NOTE 1").waitFor();
+  check(await pageA.getByText(fieldObservation).count() === 1,
+    "Creator saved a field observation using the mobile field UI");
+  await pageA.reload();
+  await pageA.getByText(fieldObservation).waitFor();
+  check(await pageA.getByText("FIELD NOTE 1").count() === 1,
+    "Field observation survives full browser reload");
+  await pageA.getByRole("button", { name: "Shape an Encounter" }).click();
+  await pageA.getByRole("heading", { name: "Review the Encounter scaffold" }).waitFor();
+  const fieldTitle = "Field Studio Browser Created Journey";
+  await pageA.getByLabel("Journey title").fill(fieldTitle);
+  await pageA.getByRole("button", { name: "Create editable Journey draft" }).click();
+  const fieldLink = pageA.getByRole("link", { name: "Open in Journey Studio" });
+  await fieldLink.waitFor({ timeout: 35_000 });
+  const fieldHref = await fieldLink.getAttribute("href");
+  check(new RegExp('^/creator/beta/[0-9a-f-]{36}
+    "Field Studio accepted scaffold and created a canonical connected Journey");
+  await fieldLink.click();
+  await pageA.waitForURL("**/creator/beta/*", { timeout: 30_000 });
+  await pageA.getByLabel("Journey title").waitFor();
+  check(await pageA.getByLabel("Journey title").inputValue() === fieldTitle,
+    "Connected Journey editor reopens field-created Journey with preserved title");
+
+  console.log(`PASS: ${assertions} real Chromium Creator Alpha app assertions (local stack only).`);
+} catch (err) {
+  console.error("FAIL: Creator Alpha browser acceptance test:", err);
+  throw err;
+} finally {
+  await contextA.close();
+  await browser.close();
+}
+).test(fieldHref || ""),
+    "Field Studio accepted scaffold and created a canonical connected Journey");
+  await fieldLink.click();
+  await pageA.waitForURL("**/creator/beta/*", { timeout: 30_000 });
+  await pageA.getByLabel("Journey title").waitFor();
+  check(await pageA.getByLabel("Journey title").inputValue() === fieldTitle,
+    "Connected Journey editor reopens field-created Journey with preserved title");
+
   console.log(`PASS: ${assertions} real Chromium Creator Alpha app assertions (local stack only).`);
 } catch (err) {
   console.error("FAIL: Creator Alpha browser acceptance test:", err);
