@@ -11,7 +11,7 @@ Confirm all of the following **before** applying migrations or provisioning a pe
 - Existing project is deliberately designated a development environment, never assumed production-ready because CI is green.
 - Both reviewed CLI migrations from the latest integrated candidate match the deployed code (creator base schema and atomic creation RPC). Review `supabase migration list` and schema/advisors before and after any separately approved application.
 - Auth email signup is **disabled on the hosted project**, not just `supabase/config.toml`; verify actual Auth settings through the dashboard/provider rather than assuming local settings transfer.
-- Service-role / secret credentials stay exclusively in trusted administrative tooling, never in repository, logs, client code or `NEXT_PUBLIC_*` variables.
+- The reviewed creator migration grants the confidential `service_role` **only** narrow table privileges needed for trusted profile and membership bootstrap (plus organization read). That role bypasses RLS, so its credential must remain in trusted administrative tooling and must never enter repository files, logs, client code or `NEXT_PUBLIC_*` variables.
 - Establish backup/export and restore procedure for any real creator drafts. Confirm Canada Central region and privacy requirements.
 - No children, learner profiles, cohorts, learner evidence or real personal learning data.
 
