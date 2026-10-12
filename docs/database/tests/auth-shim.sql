@@ -1,6 +1,7 @@
 -- PostgreSQL 17 CI shim ONLY. Does not implement the whole Supabase Auth system.
 -- Enables a small controlled test of SQL syntax, permissions, and row ownership.
 CREATE ROLE authenticated NOLOGIN;
+CREATE ROLE service_role NOLOGIN BYPASSRLS;
 CREATE ROLE anon NOLOGIN;
 CREATE SCHEMA auth;
 GRANT USAGE ON SCHEMA auth TO authenticated, anon;
