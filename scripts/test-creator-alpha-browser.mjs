@@ -198,7 +198,7 @@ try {
   await pageA.getByText(fieldObservation).waitFor();
   check(await pageA.getByText("FIELD NOTE 1").count() === 1,
     "Field observation survives full browser reload");
-  await pageA.getByRole("button", { name: "Shape an Encounter" }).click();
+  await pageA.getByRole("button", { name: "Shape without AI" }).click();
   await pageA.getByRole("heading", { name: "Review the Encounter scaffold" }).waitFor();
   const fieldTitle = "Field Studio Browser Created Journey";
   await pageA.getByLabel("Journey title").fill(fieldTitle);
