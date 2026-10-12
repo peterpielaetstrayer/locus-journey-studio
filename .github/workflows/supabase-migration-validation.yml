@@ -9,6 +9,7 @@ on:
       - "src/app/api/**"
       - "src/types/database.types.ts"
       - "scripts/test-creator-alpha-auth.mjs"
+      - "docs/database/creator-alpha-first-adult-onboarding.md"
   workflow_dispatch:
 
 concurrency:
