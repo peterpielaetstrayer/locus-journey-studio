@@ -6,10 +6,12 @@ import { createJourneyWithPersistence } from "@/hooks/useCreatorBetaSync";
 import {
   CREATOR_FIELD_KEY,
   MAX_OBSERVATION_LENGTH,
+  MAX_FIELD_EXPORT_SIZE,
   appendCreatorObservation,
   isCreatorFieldSession,
   newCreatorFieldSession,
   observationToJourneyProposal,
+  parseCreatorFieldExport,
   type CreatorFieldSession,
 } from "@/lib/creator-beta/field-session";
 import type { DraftJourneyProposal } from "@/types/creator-beta";
@@ -77,6 +79,27 @@ export function CreatorFieldSessionClient() {
     setSession(next);
     setWarning(null);
     return true;
+  }
+
+  async function restoreSessionFromFile(file: File) {
+    if (!session || blocked) return;
+    try {
+      if (file.size > MAX_FIELD_EXPORT_SIZE) {
+        throw new Error("This field-session file is too large to restore.");
+      }
+      const restored = parseCreatorFieldExport(await file.text());
+      if ((session.observations.length > 0 || session.createdJourneyId) &&
+          !window.confirm("Replace this device's current field session? Export its observations first. Import will not merge sessions.")) {
+        return;
+      }
+      if (persist(restored)) {
+        setDraft("");
+        setProposal(null);
+        setJourneyMode(null);
+      }
+    } catch (error) {
+      setWarning(error instanceof Error ? error.message : "Could not restore this Field Studio file.");
+    }
   }
 
   function keepObservation() {
@@ -163,7 +186,7 @@ export function CreatorFieldSessionClient() {
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">Capture what catches your attention in the world. Shape it into a reviewed learning Encounter, then continue in Journey Studio.</p>
       </section>
       <div className="mb-6 rounded-xl border border-accent/35 bg-accent/5 p-3 text-sm">
-        <strong>Current capabilities:</strong> private text field notes and a deterministic Encounter scaffold. An optional real AI suggestion is available <em>only</em> when the pilot operator enables it for an invited adult account. Asking AI explicitly sends the selected observation and manually entered place label to an external model provider. This build has no location tracking, photography or voice recording. Field observations stay on this device; only an accepted Journey draft uses connected persistence when configured.
+        <strong>Current capabilities:</strong> private text field notes and a deterministic Encounter scaffold. An optional real AI suggestion is available <em>only</em> when the pilot operator enables it for an invited adult account. Asking AI explicitly sends the selected observation and manually entered place label to an external model provider. This build has no location tracking, photography or voice recording. Field observations stay on this device unless you manually export and restore a private JSON file elsewhere; only an accepted Journey draft uses connected persistence when configured.
       </div>
       {warning ? <div role="alert" className="mb-5 rounded-xl border border-danger/40 bg-danger/5 p-4 text-sm text-danger">{warning}</div> : null}
       <section className={cardClass + " mb-5"} aria-labelledby="place-heading">
@@ -231,6 +254,28 @@ export function CreatorFieldSessionClient() {
             New field session
           </button>
         </div>
+        <div className="mt-4 rounded-xl border border-border bg-background p-4">
+          <label htmlFor="field-session-restore" className="block text-sm font-semibold">
+            Restore a field session from another device
+          </label>
+          <p className="mb-3 mt-1 text-xs text-muted">
+            Export the private JSON file on your phone, transfer it securely, then choose it here.
+            This is a manual transfer, not automatic sync. Restoring replaces the current
+            browser session only after your confirmation; export any notes here first.
+          </p>
+          <input
+            id="field-session-restore"
+            type="file"
+            accept=".json,application/json"
+            disabled={blocked}
+            className="w-full text-sm file:mr-3 file:rounded-lg file:border file:border-border file:bg-surface file:px-3 file:py-2"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) void restoreSessionFromFile(file);
+            }}
+          />
+        </div>
       </section>
 
       {proposal ? (
@@ -278,7 +323,9 @@ export function CreatorFieldSessionClient() {
         <section className="rounded-xl border border-accent bg-accent/5 p-5" role="status">
           <h2 className="text-lg font-semibold">Your Encounter is in a Journey draft</h2>
           <p className="mt-2 text-sm text-muted">
-            {journeyMode === "connected" ? "Journey saved through the connected API." : "Journey saved in this browser."}
+            {journeyMode === "connected" ? "Journey saved through the connected API." :
+             journeyMode === "local" ? "Journey saved in this browser." :
+             "Journey reference restored from an imported session; verify its availability in My Journeys."}
             {" "}Raw field observations remain private to this browser, not synchronized.
           </p>
           <Link className="mt-4 inline-block rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
