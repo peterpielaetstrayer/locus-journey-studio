@@ -3,6 +3,8 @@ import {
   appendCreatorObservation,
   isCreatorFieldSession,
   MAX_FIELD_NOTES,
+  MAX_FIELD_EXPORT_SIZE,
+  parseCreatorFieldExport,
   newCreatorFieldSession,
   observationToJourneyProposal,
 } from "./field-session";
@@ -39,4 +41,28 @@ describe("creator field observation → Encounter", () => {
     expect(isCreatorFieldSession({ ...session, observations: [{ id: 1 }] })).toBe(false);
     expect(isCreatorFieldSession(null)).toBe(false);
   });
+  it("restores an exported private field notebook without losing capture IDs or Journey reference", () => {
+    const started = newCreatorFieldSession("First Landing");
+    const saved = {
+      ...appendCreatorObservation(started, "The path is higher than the wetland", "field-a", "2026-10-12T13:00:00Z"),
+      createdJourneyId: "journey-123",
+    };
+    const exported = JSON.stringify({ notice: "Private field export", session: saved });
+    expect(parseCreatorFieldExport(exported)).toEqual(saved);
+    expect(parseCreatorFieldExport(JSON.stringify(saved))).toEqual(saved);
+    expect(observationToJourneyProposal(parseCreatorFieldExport(exported), "field-a").id)
+      .toBe(`field-${started.id}-field-a`);
+  });
+
+  it("fails closed on malformed, oversized, unsupported and duplicate-observation imports", () => {
+    const session = newCreatorFieldSession("a place");
+    const noted = appendCreatorObservation(session, "An observation", "same", "2026-10-12T13:00:00Z");
+    expect(() => parseCreatorFieldExport("{broken")).toThrow(/JSON/);
+    expect(() => parseCreatorFieldExport("x".repeat(MAX_FIELD_EXPORT_SIZE + 1))).toThrow(/large/);
+    expect(() => parseCreatorFieldExport(JSON.stringify({ ...noted, version: 2 }))).toThrow(/valid/);
+    expect(() => parseCreatorFieldExport(JSON.stringify({ session: { ...noted, observations: [noted.observations[0], noted.observations[0]] } }))).toThrow(/valid/);
+    expect(() => parseCreatorFieldExport(JSON.stringify({ session: { ...noted, placeLabel: "x".repeat(121) } }))).toThrow(/valid/);
+    expect(() => parseCreatorFieldExport(JSON.stringify({ other: noted }))).toThrow(/valid/);
+  });
+
 });
