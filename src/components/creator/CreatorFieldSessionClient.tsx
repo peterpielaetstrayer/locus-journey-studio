@@ -206,7 +206,7 @@ export function CreatorFieldSessionClient() {
           onChange={(event) => setDraft(event.target.value)}
           maxLength={MAX_OBSERVATION_LENGTH}
           placeholder="I noticed…"
-          disabled={Boolean(warning)} />
+          disabled={blocked} />
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className="text-xs text-muted">{draft.length}/{MAX_OBSERVATION_LENGTH} characters</span>
           <button type="button" onClick={keepObservation} disabled={!draft.trim() || blocked}
@@ -250,7 +250,7 @@ export function CreatorFieldSessionClient() {
             if (!window.confirm("Start a new session? Export first. Existing local observations will be replaced.")) return;
             const next = newCreatorFieldSession(session.placeLabel);
             if (persist(next)) { setProposal(null); setDraft(""); setJourneyMode(null); }
-          }} className="rounded-xl border border-border px-4 py-2 text-sm" disabled={Boolean(warning)}>
+          }} className="rounded-xl border border-border px-4 py-2 text-sm" disabled={blocked}>
             New field session
           </button>
         </div>
