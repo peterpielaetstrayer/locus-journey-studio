@@ -69,12 +69,17 @@ export default function CreatorLibraryPage() {
             Turn knowledge, curiosity, existing curriculum, and real-world observations into reusable learning Journeys.
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/creator/field" className="rounded-xl border border-primary bg-primary/10 px-5 py-3 text-sm font-semibold text-primary">
+            Explore in Field Studio →
+          </Link>
         <Link
           href="/creator/new"
           className="rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground"
         >
           + Create Journey
         </Link>
+        </div>
       </div>
 
       {clientMode === "connected" && connectedError ? (
