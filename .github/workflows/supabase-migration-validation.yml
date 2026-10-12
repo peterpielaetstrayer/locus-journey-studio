@@ -9,6 +9,7 @@ on:
       - "src/app/api/**"
       - "src/types/database.types.ts"
       - "scripts/test-creator-alpha-auth.mjs"
+      - "scripts/test-creator-alpha-browser.mjs"
       - "docs/database/creator-alpha-first-adult-onboarding.md"
   workflow_dispatch:
 
@@ -94,6 +95,47 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ""
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ""
 
+      - name: Install pinned ephemeral Playwright Chromium test dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: Browser acceptance through real local Supabase and Next.js
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Safety: ONLY local Supabase (port 54321) and local Next.js (port 3000).
+          umask 077
+          envfile="$(mktemp)"
+          trap 'kill "${next_pid:-}" 2>/dev/null || true; rm -f "$envfile"' EXIT
+          supabase status -o env > "$envfile"
+          set -a
+          source "$envfile"
+          set +a
+          export NEXT_PUBLIC_SUPABASE_URL="http://127.0.0.1:54321"
+          export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$ANON_KEY"
+          export CREATOR_ALPHA_BROWSER_URL="http://127.0.0.1:3000"
+          npm run dev -- --hostname 127.0.0.1 --port 3000 > browser-next.log 2>&1 &
+          next_pid=$!
+          ready=0
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3000/login >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$next_pid" 2>/dev/null; then
+              tail -60 browser-next.log
+              exit 1
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "Local Next.js login page did not become ready"
+            tail -60 browser-next.log
+            exit 1
+          fi
+          node scripts/test-creator-alpha-browser.mjs
+
       - name: Upload diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -110,6 +152,7 @@ jobs:
             npm-typecheck.log
             npm-lint.log
             npm-build.log
+            browser-next.log
             supabase/.temp/**
 
       - name: Stop local Supabase
