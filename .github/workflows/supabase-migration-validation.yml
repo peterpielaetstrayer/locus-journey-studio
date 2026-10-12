@@ -5,6 +5,9 @@ on:
     paths:
       - "supabase/**"
       - "src/lib/repositories/**"
+      - "src/lib/creator-beta/**"
+      - "docs/preview/**"
+      - ".github/workflows/supabase-migration-validation.yml"
       - "src/lib/auth/**"
       - "src/app/api/**"
       - "src/types/database.types.ts"
