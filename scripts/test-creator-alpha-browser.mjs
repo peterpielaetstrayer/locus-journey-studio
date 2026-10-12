@@ -144,7 +144,7 @@ try {
   check(swallowed && Boolean(firstCommittedId), "Commit occurred but browser lost response");
   // The proposal is NOT regenerated: one stable proposal ID = one Journey.
   await pageA.getByRole("button", { name: "Create editable Journey draft" }).click();
-  await pageA.waitForURL(/\\/creator\\/beta\\/[0-9a-f-]{36}$/, { timeout: 35_000 });
+  await pageA.waitForURL(/\/creator\/beta\/[0-9a-f-]{36}$/, { timeout: 35_000 });
   check(pageA.url().endsWith(firstCommittedId),
     "Create retry returned the exact originally committed Journey");
   await pageA.unroute("**/api/creator/beta/journeys");
