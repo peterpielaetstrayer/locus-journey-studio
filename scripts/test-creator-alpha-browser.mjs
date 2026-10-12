@@ -198,7 +198,7 @@ try {
   await pageA.getByText(fieldObservation).waitFor();
   check(await pageA.getByText("FIELD NOTE 1").count() === 1,
     "Field observation survives full browser reload");
-  await pageA.getByRole("button", { name: "Shape an Encounter" }).click();
+  await pageA.getByRole("button", { name: "Shape without AI" }).click();
   await pageA.getByRole("heading", { name: "Review the Encounter scaffold" }).waitFor();
   const fieldTitle = "Field Studio Browser Created Journey";
   await pageA.getByLabel("Journey title").fill(fieldTitle);
@@ -213,6 +213,25 @@ try {
   await pageA.getByLabel("Journey title").waitFor();
   check(await pageA.getByLabel("Journey title").inputValue() === fieldTitle,
     "Connected Journey editor reopens field-created Journey with preserved title");
+
+  // Disabled-by-default server-only AI: no provider key or billable call in CI.
+  console.log("Browser: checking Field AI fails closed without pilot enablement");
+  const aiStatus = await pageA.evaluate(async () => {
+    const request = {
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      observationId: "22222222-2222-4222-8222-222222222222",
+      observation: "Synthetic field note about different soil textures.",
+      placeLabel: "First Landing",
+      learnerContext: "Adult test",
+    };
+    const response = await fetch("/api/creator/field/suggest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    return response.status;
+  });
+  check(aiStatus === 503, "Field AI is disabled by default without server-side keys and pilot allowlist");
 
   console.log(`PASS: ${assertions} real Chromium Creator Alpha app assertions (local stack only).`);
 } catch (err) {
