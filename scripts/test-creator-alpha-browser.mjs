@@ -115,6 +115,48 @@ try {
     await contextB.close();
   }
 
+  // An HTTP response can disappear AFTER the server commits its transaction.
+  // Clicking Create again with the same proposal must return the existing draft.
+  console.log("Browser: forcing committed-create response loss and safely retrying");
+  await pageA.goto(base + "/creator/new");
+  await pageA.getByLabel("Tell LOCUS what you have in mind").fill(
+    "Investigate a synthetic adult tidal basin as an evidence-based Journey.");
+  await pageA.getByRole("button", { name: "Help me shape this Journey" }).click();
+  await pageA.getByRole("heading", { name: "Here is how LOCUS is structuring your idea" }).waitFor();
+  const idempotentTitle = "Idempotent Response Loss Demonstration";
+  await pageA.getByLabel("Journey title").fill(idempotentTitle);
+  let firstCommittedId;
+  let swallowed = false;
+  await pageA.route("**/api/creator/beta/journeys", async (route) => {
+    if (route.request().method() === "POST" && !swallowed) {
+      const response = await route.fetch();
+      check(response.ok(), "First request committed before deliberate response loss");
+      const firstBody = await response.json();
+      firstCommittedId = firstBody.journey.id;
+      swallowed = true;
+      await route.abort("failed"); // browser sees error AFTER persisted DB commit
+      return;
+    }
+    await route.continue();
+  });
+  await pageA.getByRole("button", { name: "Create editable Journey draft" }).click();
+  await pageA.getByText("Failed to fetch").waitFor({ timeout: 30_000 });
+  check(swallowed && Boolean(firstCommittedId), "Commit occurred but browser lost response");
+  // The proposal is NOT regenerated: one stable proposal ID = one Journey.
+  await pageA.getByRole("button", { name: "Create editable Journey draft" }).click();
+  await pageA.waitForURL(/\/creator\/beta\/[0-9a-f-]{36}$/, { timeout: 35_000 });
+  check(pageA.url().endsWith(firstCommittedId),
+    "Create retry returned the exact originally committed Journey");
+  await pageA.unroute("**/api/creator/beta/journeys");
+  const matching = await pageA.evaluate(async (title) => {
+    const response = await fetch("/api/creator/beta/journeys", { cache: "no-store" });
+    if (!response.ok) throw Error("Could not verify connected library after retry");
+    const { journeys } = await response.json();
+    return journeys.filter((journey) => journey.title === title).map((journey) => journey.id);
+  }, idempotentTitle);
+  check(matching.length === 1 && matching[0] === firstCommittedId,
+    "A retried committed POST creates no second Journey");
+
   // A different member of the same org MUST NOT see this Journey.
   const contextOther = await browser.newContext();
   const other = await contextOther.newPage();

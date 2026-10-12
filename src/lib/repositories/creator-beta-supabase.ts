@@ -5,7 +5,6 @@ import {
   encounterToStopInsert,
   mapCreatorStatusToDb,
   mapDbStatusToCreatorStatus,
-  slugifyTitle,
   stopRowToEncounter,
   versionRowsToCreatorJourney,
   type DbJourneyRow,
@@ -13,6 +12,7 @@ import {
   type DbVersionRow,
 } from "@/lib/creator-beta/db-adapter";
 import { isVersionEditable } from "@/lib/repositories/local";
+import { stableCreatorProposalSlug, isDatabaseUniqueViolation } from "@/lib/creator-beta/creation-idempotency";
 import { OWLL_ORG_ID } from "@/lib/auth/authorize";
 import type { Database, Json } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -153,7 +153,35 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
       }
 
       const proposal = input.proposal;
-      const slug = `${slugifyTitle(proposal.suggestedTitle)}-${Date.now().toString(36).slice(-6)}`;
+      // Proposal IDs remain stable while the creator retries one draft.
+      // Distinct authenticated creators get distinct keys even if their proposal IDs match.
+      const slug = stableCreatorProposalSlug(user.id, proposal.id);
+
+      const recoverPreviouslyCommittedDraft = async (): Promise<CreatorBetaJourneyRecord | null> => {
+        const { data: existing, error: lookupError } = await db
+          .from("journeys")
+          .select("id")
+          .eq("organization_id", OWLL_ORG_ID)
+          .eq("created_by", user.id)
+          .eq("slug", slug)
+          .maybeSingle();
+        if (lookupError) throw lookupError;
+        if (!existing) return null;
+        const record = await this.getJourneyById(existing.id);
+        if (!record) throw new Error("Previously created draft is not accessible.");
+        const sameProposal = record.journey.sourceContext.some(
+          (source) => source.type === "other" && source.id === proposal.id,
+        );
+        if (!sameProposal || !record.journey.creatorIds.includes(user.id)) {
+          throw new Error("Existing draft does not match the submitted creator proposal.");
+        }
+        return record;
+      };
+
+      // Handles retries after a COMMITTED server transaction whose HTTP response
+      // never reached the browser. No extra insert is attempted on an ordinary retry.
+      const recovered = await recoverPreviouslyCommittedDraft();
+      if (recovered) return recovered;
 
       // The database RPC is a SINGLE transaction. Failure at any Encounter
       // causes Journey, version, all earlier Encounters and audit to roll back.
@@ -208,7 +236,15 @@ function createCreatorBetaRepository(db: Db): CreatorBetaRepository {
         p_version_meta: buildVersionMeta(draftJourney) as unknown as Json,
         p_stops: proposedStops as unknown as Json,
       });
-      if (createError) throw createError;
+      if (createError) {
+        // Concurrent retries can both pass the prior lookup; the database
+        // UNIQUE (organization_id,slug) constraint decides which one commits.
+        if (isDatabaseUniqueViolation(createError)) {
+          const committed = await recoverPreviouslyCommittedDraft();
+          if (committed) return committed;
+        }
+        throw createError;
+      }
       const savedId = created?.[0]?.journey_id;
       if (!savedId) throw new Error("Creator Journey transaction returned no Journey ID");
 
