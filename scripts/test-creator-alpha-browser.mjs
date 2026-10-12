@@ -206,7 +206,7 @@ try {
   const fieldLink = pageA.getByRole("link", { name: "Open in Journey Studio" });
   await fieldLink.waitFor({ timeout: 35_000 });
   const fieldHref = await fieldLink.getAttribute("href");
-  check(new RegExp('^/creator/beta/[0-9a-f-]{36}
+  check(new RegExp("^/creator/beta/[0-9a-f-]{36}$", "i").test(fieldHref || ""),
     "Field Studio accepted scaffold and created a canonical connected Journey");
   await fieldLink.click();
   await pageA.waitForURL("**/creator/beta/*", { timeout: 30_000 });
