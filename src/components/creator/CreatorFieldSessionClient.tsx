@@ -53,6 +53,7 @@ const cardClass = "rounded-2xl border border-border bg-surface p-5 shadow-sm";
 export function CreatorFieldSessionClient() {
   const [session, setSession] = useState<CreatorFieldSession | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
   const [draft, setDraft] = useState("");
   const [proposal, setProposal] = useState<DraftJourneyProposal | null>(null);
   const [creating, setCreating] = useState(false);
@@ -62,6 +63,7 @@ export function CreatorFieldSessionClient() {
     const loaded = readSession();
     setSession(loaded.session);
     setWarning(loaded.warning);
+    setBlocked(Boolean(loaded.warning));
   }, []);
 
   function persist(next: CreatorFieldSession): boolean {
@@ -76,7 +78,7 @@ export function CreatorFieldSessionClient() {
   }
 
   function keepObservation() {
-    if (!session || warning) return;
+    if (!session || blocked) return;
     try {
       const next = appendCreatorObservation(session, draft);
       if (persist(next)) setDraft("");
@@ -113,10 +115,10 @@ export function CreatorFieldSessionClient() {
     }
   }
 
-  if (!session) return <main className="mx-auto max-w-3xl px-4 py-12" role="status">Opening your field notebook…</main>;
+  if (!session) return <div className="mx-auto max-w-3xl px-4 py-12" role="status">Opening your field notebook…</div>;
 
   return (
-    <main className="creator-surface mx-auto max-w-3xl px-4 pb-24 pt-5 sm:pt-9">
+    <div className="creator-surface mx-auto max-w-3xl px-4 pb-24 pt-5 sm:pt-9">
       <nav className="mb-6 flex items-center justify-between text-sm">
         <Link href="/creator" className="text-muted underline-offset-4 hover:underline">← My Journeys</Link>
         <span className="rounded-full border border-accent/30 px-3 py-1 text-xs text-accent">FIELD STUDIO · ALPHA</span>
@@ -134,7 +136,7 @@ export function CreatorFieldSessionClient() {
         <label id="place-heading" htmlFor="field-place" className="mb-2 block text-sm font-semibold">Where are you exploring?</label>
         <input id="field-place" className={inputClass} value={session.placeLabel} maxLength={120}
           onChange={(event) => persist({ ...session, placeLabel: event.target.value, updatedAt: new Date().toISOString() })}
-          placeholder="A park, street, room or question…" disabled={Boolean(warning)} />
+          placeholder="A park, street, room or question…" disabled={blocked} />
         <p className="mt-2 text-xs text-muted">A label you control. LOCUS does not request your GPS location.</p>
       </section>
 
@@ -150,7 +152,7 @@ export function CreatorFieldSessionClient() {
           disabled={Boolean(warning)} />
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className="text-xs text-muted">{draft.length}/{MAX_OBSERVATION_LENGTH} characters</span>
-          <button type="button" onClick={keepObservation} disabled={!draft.trim() || Boolean(warning)}
+          <button type="button" onClick={keepObservation} disabled={!draft.trim() || blocked}
             className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40">Keep observation</button>
         </div>
       </section>
@@ -243,6 +245,6 @@ export function CreatorFieldSessionClient() {
             href={`/creator/beta/${session.createdJourneyId}`}>Open in Journey Studio →</Link>
         </section>
       ) : null}
-    </main>
+    </div>
   );
 }
