@@ -6,6 +6,8 @@ on:
       - "supabase/**"
       - "src/lib/repositories/**"
       - "src/lib/creator-beta/**"
+      - "src/components/creator/**"
+      - "src/app/creator/**"
       - "docs/preview/**"
       - ".github/workflows/supabase-migration-validation.yml"
       - "src/lib/auth/**"
@@ -41,6 +43,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate browser test syntax before starting Docker
+        run: node --check scripts/test-creator-alpha-browser.mjs
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
