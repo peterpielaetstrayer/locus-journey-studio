@@ -222,19 +222,3 @@ try {
   await contextA.close();
   await browser.close();
 }
-).test(fieldHref || ""),
-    "Field Studio accepted scaffold and created a canonical connected Journey");
-  await fieldLink.click();
-  await pageA.waitForURL("**/creator/beta/*", { timeout: 30_000 });
-  await pageA.getByLabel("Journey title").waitFor();
-  check(await pageA.getByLabel("Journey title").inputValue() === fieldTitle,
-    "Connected Journey editor reopens field-created Journey with preserved title");
-
-  console.log(`PASS: ${assertions} real Chromium Creator Alpha app assertions (local stack only).`);
-} catch (err) {
-  console.error("FAIL: Creator Alpha browser acceptance test:", err);
-  throw err;
-} finally {
-  await contextA.close();
-  await browser.close();
-}
