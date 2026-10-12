@@ -20,6 +20,31 @@ export type CreatorFieldSession = {
 export const CREATOR_FIELD_KEY = "locus:creator:field-session:v1";
 export const MAX_FIELD_NOTES = 30;
 export const MAX_OBSERVATION_LENGTH = 1500;
+export const MAX_FIELD_EXPORT_SIZE = 128_000; // bytes; small, text-only private notebook export
+
+/**
+ * Restore an explicitly exported Creator Field Session on another device.
+ * Never accept an arbitrary learning object as a creator-owned field notebook.
+ * Importing does not upload anything or imply automatic cloud sync.
+ */
+export function parseCreatorFieldExport(raw: string): CreatorFieldSession {
+  if (new TextEncoder().encode(raw).byteLength > MAX_FIELD_EXPORT_SIZE) {
+    throw new Error("This field-session file is too large to restore.");
+  }
+
+  let decoded: unknown;
+  try {
+    decoded = JSON.parse(raw);
+  } catch {
+    throw new Error("This is not a readable Field Studio JSON export.");
+  }
+  const candidate = decoded && typeof decoded === "object" && !Array.isArray(decoded) &&
+    "session" in decoded ? (decoded as { session: unknown }).session : decoded;
+  if (!isCreatorFieldSession(candidate)) {
+    throw new Error("This file is not a valid Field Studio v1 session. Nothing was replaced.");
+  }
+  return candidate;
+}
 
 export function newCreatorFieldSession(placeLabel = ""): CreatorFieldSession {
   const now = new Date().toISOString();
@@ -57,18 +82,21 @@ export function isCreatorFieldSession(value: unknown): value is CreatorFieldSess
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const session = value as Partial<CreatorFieldSession>;
   return session.version === 1 &&
-    typeof session.id === "string" &&
-    typeof session.placeLabel === "string" &&
-    typeof session.createdAt === "string" &&
-    typeof session.updatedAt === "string" &&
+    typeof session.id === "string" && session.id.length > 0 && session.id.length <= 128 &&
+    typeof session.placeLabel === "string" && session.placeLabel.length <= 120 &&
+    typeof session.createdAt === "string" && !Number.isNaN(Date.parse(session.createdAt)) &&
+    typeof session.updatedAt === "string" && !Number.isNaN(Date.parse(session.updatedAt)) &&
     Array.isArray(session.observations) &&
     session.observations.length <= MAX_FIELD_NOTES &&
     session.observations.every((note) =>
-      note && typeof note.id === "string" &&
-      typeof note.text === "string" && note.text.length <= MAX_OBSERVATION_LENGTH &&
-      typeof note.createdAt === "string"
+      note && typeof note.id === "string" && note.id.length > 0 && note.id.length <= 128 &&
+      typeof note.text === "string" && note.text.trim().length > 0 &&
+      note.text.length <= MAX_OBSERVATION_LENGTH &&
+      typeof note.createdAt === "string" && !Number.isNaN(Date.parse(note.createdAt))
     ) &&
-    (session.createdJourneyId === undefined || typeof session.createdJourneyId === "string");
+    new Set(session.observations.map((note) => note.id)).size === session.observations.length &&
+    (session.createdJourneyId === undefined ||
+      (typeof session.createdJourneyId === "string" && session.createdJourneyId.length <= 128));
 }
 
 /** Honest prototype scaffold, NOT a live AI suggestion or a researched site fact. */
