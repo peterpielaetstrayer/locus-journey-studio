@@ -56,6 +56,8 @@ export function CreatorFieldSessionClient() {
   const [blocked, setBlocked] = useState(false);
   const [draft, setDraft] = useState("");
   const [proposal, setProposal] = useState<DraftJourneyProposal | null>(null);
+  const [aiBusyId, setAiBusyId] = useState<string | null>(null);
+  const [proposalOrigin, setProposalOrigin] = useState<"scaffold" | "ai">("scaffold");
   const [creating, setCreating] = useState(false);
   const [journeyMode, setJourneyMode] = useState<"connected" | "local" | null>(null);
 
@@ -91,9 +93,41 @@ export function CreatorFieldSessionClient() {
     if (!session) return;
     try {
       setProposal(observationToJourneyProposal(session, observationId));
+      setProposalOrigin("scaffold");
       setWarning(null);
     } catch (error) {
       setWarning(error instanceof Error ? error.message : "Cannot shape this observation.");
+    }
+  }
+
+  async function requestAiSuggestion(observationId: string) {
+    if (!session || aiBusyId) return;
+    const note = session.observations.find((item) => item.id === observationId);
+    if (!note) return;
+    setAiBusyId(observationId);
+    setWarning(null);
+    try {
+      const response = await fetch("/api/creator/field/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: session.id,
+          observationId: note.id,
+          observation: note.text,
+          placeLabel: session.placeLabel,
+          learnerContext: "Adult creator pilot; refine the audience.",
+        }),
+      });
+      const result = (await response.json()) as { proposal?: DraftJourneyProposal; error?: string };
+      if (!response.ok || !result.proposal) {
+        throw new Error(result.error || "No usable AI proposal was returned.");
+      }
+      setProposal(result.proposal);
+      setProposalOrigin("ai");
+    } catch (error) {
+      setWarning(error instanceof Error ? error.message : "AI suggestion failed. Your notes remain on this device.");
+    } finally {
+      setAiBusyId(null);
     }
   }
 
@@ -129,7 +163,7 @@ export function CreatorFieldSessionClient() {
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">Capture what catches your attention in the world. Shape it into a reviewed learning Encounter, then continue in Journey Studio.</p>
       </section>
       <div className="mb-6 rounded-xl border border-accent/35 bg-accent/5 p-3 text-sm">
-        <strong>Current capabilities:</strong> private text field notes and a deterministic Encounter scaffold. This build does <strong>not</strong> use live AI, location tracking, photography or voice recording. Field observations stay in this browser; only an accepted Journey draft uses connected persistence when configured.
+        <strong>Current capabilities:</strong> private text field notes and a deterministic Encounter scaffold. An optional real AI suggestion is available <em>only</em> when the pilot operator enables it for an invited adult account. Asking AI explicitly sends the selected observation and manually entered place label to an external model provider. This build has no location tracking, photography or voice recording. Field observations stay on this device; only an accepted Journey draft uses connected persistence when configured.
       </div>
       {warning ? <div role="alert" className="mb-5 rounded-xl border border-danger/40 bg-danger/5 p-4 text-sm text-danger">{warning}</div> : null}
       <section className={cardClass + " mb-5"} aria-labelledby="place-heading">
@@ -177,7 +211,12 @@ export function CreatorFieldSessionClient() {
                 <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{item.text}</p>
                 <button type="button" onClick={() => startProposal(item.id)}
                   className="mt-3 rounded-lg border border-primary/40 px-3 py-2 text-sm font-medium text-primary">
-                  Shape an Encounter →
+                  Shape without AI →
+                </button>
+                <button type="button" onClick={() => void requestAiSuggestion(item.id)}
+                  disabled={aiBusyId !== null}
+                  className="ml-2 mt-3 rounded-lg border border-accent/40 px-3 py-2 text-sm font-medium text-accent disabled:opacity-40">
+                  {aiBusyId === item.id ? "Thinking…" : "Ask LOCUS AI ↗"}
                 </button>
               </li>
             ))}
@@ -198,6 +237,7 @@ export function CreatorFieldSessionClient() {
         <section className={cardClass + " mb-5"} aria-labelledby="suggestion-heading">
           <p className="mb-1 text-xs uppercase tracking-[0.14em] text-accent">03 · Design</p>
           <h2 id="suggestion-heading" className="text-xl font-semibold">Review the Encounter scaffold</h2>
+          <p className="mb-2 text-xs font-semibold uppercase text-accent">{proposalOrigin === "ai" ? "AI-assisted · human review required" : "Deterministic scaffold · no AI used"}</p>
           <p className="mb-4 mt-2 text-sm text-muted">{proposal.rationale}</p>
           <label className="mb-3 block text-sm font-semibold">Journey title
             <input className={inputClass + " mt-2"} value={proposal.suggestedTitle}
