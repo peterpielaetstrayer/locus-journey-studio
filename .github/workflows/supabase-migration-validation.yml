@@ -8,6 +8,7 @@ on:
       - "src/lib/auth/**"
       - "src/app/api/**"
       - "src/types/database.types.ts"
+      - "scripts/test-creator-alpha-auth.mjs"
   workflow_dispatch:
 
 concurrency:
@@ -54,6 +55,21 @@ jobs:
 
       - name: Reset local database (migrations + seed)
         run: supabase db reset --local 2>&1 | tee supabase-db-reset.log
+
+      - name: Exercise real local Supabase Auth and Data API RLS (synthetic adults)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Obtain temporary LOCAL stack keys only. Never print or upload them.
+          supabase status --help >/dev/null
+          umask 077
+          envfile="$(mktemp)"
+          trap 'rm -f "$envfile"' EXIT
+          supabase status -o env > "$envfile"
+          set -a
+          source "$envfile"
+          set +a
+          node scripts/test-creator-alpha-auth.mjs
 
       - name: Run pgTAP RLS tests (48 assertions)
         run: supabase test db 2>&1 | tee supabase-test-db.log
