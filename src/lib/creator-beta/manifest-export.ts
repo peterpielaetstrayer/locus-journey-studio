@@ -3,6 +3,7 @@ import type {
   Encounter,
   JourneyManifestV01,
 } from "@/types/creator-beta";
+import { validateLearnerImportCompatibility } from "./manifest-portability";
 
 export type ManifestExportResult =
   | { ok: true; manifest: JourneyManifestV01 }
@@ -83,17 +84,23 @@ export function buildJourneyManifestForExport(
 
   if (issues.length > 0) return { ok: false, issues };
 
-  // Snapshot object: later edits to the live Zustand store should not mutate
-  // the exported manifest, and the source provenance stays intact.
-  return {
-    ok: true,
-    manifest: JSON.parse(JSON.stringify({
+  // Snapshot object: later edits must not mutate the exported manifest.
+  // Preflight the exact pretty-printed JSON bytes downloaded by the browser:
+  // learner import limits apply to the FILE, not just compact serialization.
+  try {
+    const manifest = JSON.parse(JSON.stringify({
       manifestVersion: "0.1",
       journey,
       encounters,
       generatedAt,
-    })) as JourneyManifestV01,
-  };
+    })) as JourneyManifestV01;
+    const downloadedJson = JSON.stringify(manifest, null, 2);
+    const compatibilityIssues = validateLearnerImportCompatibility(manifest, downloadedJson);
+    if (compatibilityIssues.length > 0) return { ok: false, issues: compatibilityIssues };
+    return { ok: true, manifest };
+  } catch {
+    return { ok: false, issues: ["Draft contains data that cannot be exported as JSON."] };
+  }
 }
 
 export function manifestFilename(title: string): string {
