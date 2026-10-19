@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - creator-beta-v0.2
+      - feature/creator-beta-manifest-export
     paths:
       - "src/**"
       - "docs/**"
