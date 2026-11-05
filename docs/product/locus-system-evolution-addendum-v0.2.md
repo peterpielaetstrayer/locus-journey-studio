@@ -616,3 +616,9 @@ Its near-term proof is simple:
 Its long-term horizon is larger:
 
 > A person can move through any place, project, question, or situation and encounter an adaptive educational layer that helps the world become more legible, actionable, memorable, and meaningful.
+
+---
+
+## Cross-document clarification — 2026-11-05
+
+The canonical learner-facing cross-context design direction is now [Curricular Interoperability and Open Explore v0.1](https://github.com/peterpielaetstrayer/locus/blob/main/docs/CURRICULAR_INTEROPERABILITY_AND_OPEN_EXPLORE_v0.1.md). It specifies how the Guided Journey and Free Exploration modes described above should connect (eventually) with learner-selected study topics, reviewed curricular/standards mappings, concept relationships, Capture, Evidence, and delayed retrieval. **Open Explore** is the learner-facing name for spontaneous Free Exploration. This is a design clarification only: no live Khan Academy integration, validated Virginia SOL alignment, automatic school-platform reporting, or efficacy claim is implied. The present Journey Studio journey and prototype-status boundaries remain unchanged.
